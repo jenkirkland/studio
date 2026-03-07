@@ -34,12 +34,12 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
   return (
     <Card className={cn(
       "overflow-hidden transition-all duration-300 border hover:shadow-lg",
-      activity.isOptional ? "opacity-60 grayscale-[0.3] border-dashed" : "border-border shadow-sm",
-      activity.isMeal ? "bg-accent/5 border-accent/20" : "bg-white"
+      activity.isOptional ? "opacity-60 grayscale-[0.3] border-dashed bg-muted/20" : "border-border shadow-sm bg-white",
+      activity.isMeal ? "bg-accent/5 border-accent/20" : ""
     )}>
       <CardHeader className="p-4 pb-2">
         <div className="flex justify-between items-start gap-2">
-          <Badge variant="outline" className={cn("capitalize font-bold text-[9px] border", typeColors[activity.type] || "bg-muted")}>
+          <Badge variant="outline" className={cn("capitalize font-bold text-[10px] border px-2 py-0", typeColors[activity.type] || "bg-muted")}>
             {activity.type}
           </Badge>
           <div className="flex items-center text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
@@ -47,18 +47,18 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
             {activity.durationMinutes} min
           </div>
         </div>
-        <CardTitle className="text-base mt-2 leading-tight font-headline font-black text-foreground line-clamp-1 flex items-center gap-2">
+        <CardTitle className="text-base mt-2 leading-tight font-headline font-bold text-foreground line-clamp-1 flex items-center gap-2">
           {activity.isMeal && <Utensils className="w-4 h-4 text-accent" />}
           {activity.name}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-4 pt-1">
-        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-3">
           {activity.description}
         </p>
-        <div className="flex items-center text-[10px] text-primary mt-2 font-medium">
+        <div className="flex items-center text-[10px] text-primary/80 font-medium">
           <MapPin className="w-3 h-3 mr-1" />
-          {activity.address}
+          <span className="truncate">{activity.address}</span>
         </div>
       </CardContent>
       <CardFooter className="p-4 pt-0 flex gap-2">
@@ -67,7 +67,7 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
             onClick={onAction} 
             variant="default" 
             size="sm" 
-            className="w-full bg-primary h-8 text-xs font-bold hover:bg-primary/90 shadow-sm"
+            className="w-full bg-primary h-8 text-xs font-bold hover:bg-primary/90 shadow-sm transition-transform active:scale-95"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add to Day
@@ -78,7 +78,8 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
               onClick={onAction} 
               variant="ghost" 
               size="icon" 
-              className="text-destructive h-8 w-8 hover:bg-destructive/10"
+              className="text-destructive h-8 w-8 hover:bg-destructive/10 shrink-0"
+              title="Remove from plan"
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -87,8 +88,8 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
               variant="outline" 
               size="sm" 
               className={cn(
-                "flex-1 text-[10px] h-8 font-bold",
-                activity.isOptional ? "bg-accent/10 border-accent text-accent" : "hover:border-accent"
+                "flex-1 text-[10px] h-8 font-bold transition-colors",
+                activity.isOptional ? "bg-accent/10 border-accent text-accent hover:bg-accent/20" : "hover:border-accent hover:text-accent"
               )}
             >
               {activity.isOptional ? (

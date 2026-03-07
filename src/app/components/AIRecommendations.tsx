@@ -4,12 +4,12 @@ import { useState } from 'react';
 import { usePlanner } from './planner-store';
 import { suggestComplementaryActivities, SuggestComplementaryActivitiesOutput } from '@/ai/flows/suggest-complementary-activities-flow';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Sparkles, Loader2, Plus, AlertCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Sparkles, Loader2, Plus, AlertCircle, Lightbulb } from 'lucide-react';
 import { ACTIVITIES } from '../lib/activities';
 
 export function AIRecommendations() {
-  const { shortlist, days, activeDayId, addActivityToDay, availableActivities } = usePlanner();
+  const { days, activeDayId, addActivityToDay } = usePlanner();
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState<SuggestComplementaryActivitiesOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,8 +39,8 @@ export function AIRecommendations() {
       });
       setRecommendations(result);
     } catch (err) {
-      console.error(err);
-      setError("Failed to fetch suggestions. Try again later.");
+      console.error("AI Recommendation Error:", err);
+      setError("Failed to fetch suggestions. Our AI might be busy, please try again.");
     } finally {
       setLoading(false);
     }
@@ -60,43 +60,46 @@ export function AIRecommendations() {
   };
 
   return (
-    <Card className="border-accent bg-accent/5 mb-6 overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-accent" />
-            <h3 className="font-headline font-bold text-accent-foreground">Smart Suggestions for {activeDay.name}</h3>
+    <Card className="border-2 border-primary/20 bg-primary/5 shadow-md mb-6 animate-in fade-in zoom-in duration-300">
+      <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+        <div className="flex items-center gap-2">
+          <div className="bg-primary/20 p-2 rounded-lg">
+            <Lightbulb className="w-5 h-5 text-primary" />
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={getRecommendations}
-            disabled={loading}
-            className="text-accent hover:text-accent hover:bg-accent/10"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-            {recommendations ? 'Refresh' : 'Get Ideas'}
-          </Button>
+          <CardTitle className="text-lg font-bold text-primary">Smart Planning Assistant</CardTitle>
         </div>
-
+        <Button 
+          variant="default" 
+          size="sm" 
+          onClick={getRecommendations}
+          disabled={loading}
+          className="bg-primary hover:bg-primary/90 text-white shadow-sm h-8"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
+          {recommendations ? 'Refresh Ideas' : 'Get Ideas'}
+        </Button>
+      </CardHeader>
+      <CardContent className="p-4 pt-2">
         {error && (
-          <div className="text-destructive text-sm flex items-center gap-1">
-            <AlertCircle className="w-4 h-4" /> {error}
+          <div className="bg-destructive/10 text-destructive p-3 rounded-lg text-sm flex items-center gap-2 mb-2">
+            <AlertCircle className="w-4 h-4 shrink-0" /> {error}
           </div>
         )}
 
-        {recommendations && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {recommendations && recommendations.suggestedActivities.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
             {recommendations.suggestedActivities.map((rec, idx) => (
-              <div key={idx} className="bg-white/80 rounded-lg p-3 border border-accent/20 flex flex-col justify-between shadow-sm">
+              <div key={idx} className="bg-white rounded-xl p-4 border border-primary/10 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
                 <div>
                   <h4 className="font-bold text-sm text-foreground mb-1">{rec.name}</h4>
-                  <p className="text-xs text-muted-foreground italic mb-3">"{rec.reason}"</p>
+                  <p className="text-xs text-muted-foreground italic leading-relaxed mb-4">
+                    "{rec.reason}"
+                  </p>
                 </div>
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  className="w-full text-xs h-7 border-accent text-accent hover:bg-accent hover:text-white"
+                  className="w-full text-xs h-8 border-primary/30 text-primary hover:bg-primary hover:text-white transition-colors"
                   onClick={() => handleAddSuggested(rec.name)}
                 >
                   <Plus className="w-3 h-3 mr-1" /> Add to {activeDay.name}
@@ -104,12 +107,16 @@ export function AIRecommendations() {
               </div>
             ))}
           </div>
-        )}
-
-        {!recommendations && !loading && (
-          <p className="text-xs text-muted-foreground text-center py-2">
-            Click 'Get Ideas' for curated activities that complement your current choices.
+        ) : recommendations ? (
+          <p className="text-sm text-muted-foreground text-center py-6 bg-white/50 rounded-lg italic">
+            Your day looks quite full! No further suggestions needed.
           </p>
+        ) : !loading && (
+          <div className="text-center py-6">
+            <p className="text-sm text-muted-foreground">
+              Not sure what to do next? Click <strong>'Get Ideas'</strong> to see activities that perfectly match your current plan.
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>
