@@ -8,12 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Map, Sparkles, Navigation, Info, Plus, Calendar as CalendarIcon, Search, ListTodo, Trash2, Clock, LayoutDashboard, Settings2, Wand2 } from "lucide-react";
+import { Map, Sparkles, Navigation, Info, Plus, Search, ListTodo, Trash2, Clock, LayoutDashboard, Settings2, Wand2, Utensils, Loader2 } from "lucide-react";
 import { DiscoveryTable } from "./DiscoveryTable";
 import { AIRecommendations } from "./AIRecommendations";
 import { OptimizeItinerary } from "./OptimizeItinerary";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { suggestNearbyFood } from "@/ai/flows/suggest-nearby-food-flow";
+import { toast } from "@/hooks/use-toast";
 
 export function PlannerUI() {
   const { 
@@ -30,15 +32,42 @@ export function PlannerUI() {
     setTripDuration,
     dailyActiveHours,
     setDailyActiveHours,
+    startHour,
+    setStartHour,
     distributeShortlistIntoDays
   } = usePlanner();
   
   const [showAI, setShowAI] = useState(false);
+  const [loadingFood, setLoadingFood] = useState(false);
 
   const activeDay = days.find(d => d.id === activeDayId) || days[0];
 
   const totalDuration = activeDay.activities.reduce((sum, a) => sum + (a.isOptional ? 0 : a.durationMinutes), 0);
-  const totalDriveTime = activeDay.activities.filter(a => !a.isOptional).length * 20;
+  const totalTravelTime = activeDay.activities.reduce((sum, a) => sum + (a.travelTimeFromPrev || 0), 0);
+
+  const handleSuggestFood = async () => {
+    if (activeDay.activities.length < 1) {
+      toast({ title: "Add activities first!", description: "We need a route to suggest food along.", variant: "destructive" });
+      return;
+    }
+    setLoadingFood(true);
+    try {
+      const result = await suggestNearbyFood({
+        activities: activeDay.activities.map(a => ({ name: a.name, address: a.address }))
+      });
+      // For simplicity, we just toast the first suggestion for now or could show a dialog
+      // In a real app, we'd add these to a special "Suggested Food" section
+      toast({
+        title: "Food Suggestions Ready!",
+        description: `Try ${result.suggestions[0].name}: ${result.suggestions[0].reason}`,
+      });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Food Search Failed", variant: "destructive" });
+    } finally {
+      setLoadingFood(false);
+    }
+  };
 
   const generateGoogleMapsLink = () => {
     const origin = "Tewksbury,MA";
@@ -95,6 +124,17 @@ export function PlannerUI() {
                   />
                 </div>
                 <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase font-bold text-muted-foreground">Start Time (24h)</Label>
+                  <Input 
+                    type="number" 
+                    value={startHour} 
+                    onChange={(e) => setStartHour(parseInt(e.target.value) || 9)}
+                    className="h-9 text-xs font-bold"
+                    min={0}
+                    max={23}
+                  />
+                </div>
+                <div className="space-y-1.5 col-span-2">
                   <Label className="text-[10px] uppercase font-bold text-muted-foreground">Max Hours/Day</Label>
                   <Input 
                     type="number" 
@@ -186,6 +226,16 @@ export function PlannerUI() {
                 <Button 
                   variant="outline" 
                   size="sm"
+                  onClick={handleSuggestFood}
+                  disabled={loadingFood}
+                  className="border-primary/30 text-primary hover:bg-primary/5 h-8 text-xs font-bold"
+                >
+                  {loadingFood ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Utensils className="w-3 h-3 mr-2" />}
+                  Food Nearby
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
                   onClick={() => setShowAI(!showAI)}
                   className={cn(
                     "h-8 text-xs font-bold transition-all", 
@@ -193,7 +243,7 @@ export function PlannerUI() {
                   )}
                 >
                   <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                  Ideas
+                  AI Tips
                 </Button>
                 <Button 
                   size="sm"
@@ -241,12 +291,22 @@ export function PlannerUI() {
               ) : (
                 <>
                   <ScrollArea className="flex-1 pr-4">
-                    <div className="space-y-10 pb-10">
+                    <div className="space-y-12 pb-10">
                       {activeDay.activities.map((activity, index) => (
                         <div key={activity.id} className="relative group pl-12">
+                          {/* Travel Marker Above */}
+                          {activity.travelTimeFromPrev && (
+                             <div className="absolute -top-8 left-0 pl-14 flex items-center gap-2">
+                               <div className="h-0.5 w-4 bg-accent/30" />
+                               <span className="text-[9px] font-black uppercase text-accent bg-accent/5 px-2 py-0.5 rounded-full border border-accent/10 whitespace-nowrap">
+                                 Travel: ~{activity.travelTimeFromPrev} min
+                               </span>
+                             </div>
+                          )}
+
                           {/* Progress Line */}
                           {index < activeDay.activities.length - 1 && (
-                            <div className="absolute top-10 left-[1.375rem] w-0.5 h-[calc(100%+2.5rem)] bg-gradient-to-b from-primary/30 to-transparent" />
+                            <div className="absolute top-10 left-[1.375rem] w-0.5 h-[calc(100%+3rem)] bg-gradient-to-b from-primary/30 to-transparent" />
                           )}
                           
                           {/* Timeline Marker */}
@@ -258,9 +318,16 @@ export function PlannerUI() {
                               {activity.scheduledTime ? <Clock className="w-5 h-5" /> : index + 1}
                             </div>
                             {activity.scheduledTime && (
-                              <span className="text-[10px] font-black text-primary mt-2 bg-primary/5 px-2.5 py-0.5 rounded-full border border-primary/10 whitespace-nowrap uppercase tracking-tighter">
-                                {activity.scheduledTime}
-                              </span>
+                              <div className="mt-2 flex flex-col items-center gap-0.5">
+                                <span className="text-[9px] font-black text-primary bg-primary/5 px-2.5 py-0.5 rounded-full border border-primary/10 whitespace-nowrap uppercase tracking-tighter">
+                                  {activity.scheduledTime}
+                                </span>
+                                {activity.endTime && (
+                                  <span className="text-[8px] font-bold text-muted-foreground">
+                                    to {activity.endTime}
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </div>
 
@@ -287,15 +354,15 @@ export function PlannerUI() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">Drive Est.</p>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">Travel Est.</p>
                         <p className="text-3xl font-black text-accent">
-                          ~{totalDriveTime} <span className="text-base font-bold">min</span>
+                          ~{totalTravelTime} <span className="text-base font-bold">min</span>
                         </p>
                       </div>
                     </div>
                     <div className="hidden md:flex items-center gap-3 text-[11px] text-muted-foreground bg-primary/5 px-5 py-3 rounded-2xl border border-primary/10 max-w-sm">
                       <Info className="w-4 h-4 text-primary shrink-0" />
-                      <span>The "Optimize" button will add meal breaks and reorder stops for efficiency.</span>
+                      <span>Use "Food Nearby" to see top-rated eats specifically along your current route between stops.</span>
                     </div>
                   </div>
                 </>

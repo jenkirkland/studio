@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { usePlanner, PlannedActivity } from './planner-store';
 import { optimizeItinerary } from '@/ai/flows/optimize-itinerary-flow';
 import { Button } from '@/components/ui/button';
-import { Loader2, Wand2, Check } from 'lucide-react';
+import { Loader2, Wand2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 export function OptimizeItinerary() {
-  const { days, activeDayId, setDayActivities } = usePlanner();
+  const { days, activeDayId, setDayActivities, startHour } = usePlanner();
   const [loading, setLoading] = useState(false);
   const activeDay = days.find(d => d.id === activeDayId);
 
@@ -31,7 +31,8 @@ export function OptimizeItinerary() {
           durationMinutes: a.durationMinutes,
           type: a.type,
           address: a.address
-        }))
+        })),
+        startHour: startHour
       });
 
       const optimizedActivities: PlannedActivity[] = result.itinerary.map(item => {
@@ -39,20 +40,22 @@ export function OptimizeItinerary() {
         return {
           id: item.id || `meal-${Date.now()}-${Math.random()}`,
           name: item.name,
-          description: item.reason || "",
+          description: item.reason || (existing?.description || ""),
           type: item.type === 'meal' ? 'food' : (existing?.type || 'sightseeing'),
           durationMinutes: item.durationMinutes,
-          address: existing?.address || "Local Restaurant",
+          address: existing?.address || item.name,
           scheduledTime: item.startTime,
+          endTime: item.endTime,
           isOptional: false,
-          isMeal: item.type === 'meal'
+          isMeal: item.type === 'meal',
+          travelTimeFromPrev: item.travelTimeMinutes
         };
       });
 
       setDayActivities(activeDayId, optimizedActivities);
       toast({
         title: "Itinerary Optimized!",
-        description: "We've reordered your day and added a lunch break.",
+        description: "We've reordered your day, calculated travel times, and added breaks.",
       });
     } catch (err) {
       console.error(err);
@@ -72,7 +75,7 @@ export function OptimizeItinerary() {
       disabled={loading}
       variant="outline"
       size="sm"
-      className="border-primary text-primary hover:bg-primary/5 h-8 text-xs"
+      className="border-primary text-primary hover:bg-primary/5 h-8 text-xs font-bold"
     >
       {loading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Wand2 className="w-3 h-3 mr-2" />}
       Optimize Order

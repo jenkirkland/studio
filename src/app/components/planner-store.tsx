@@ -6,7 +6,10 @@ import { Activity, ACTIVITIES } from '@/app/lib/activities';
 export interface PlannedActivity extends Activity {
   isOptional: boolean;
   scheduledTime?: string;
+  endTime?: string;
   isMeal?: boolean;
+  travelTimeToNext?: number;
+  travelTimeFromPrev?: number;
 }
 
 export interface DayPlan {
@@ -21,8 +24,10 @@ interface PlannerContextType {
   activeDayId: string;
   tripDuration: number;
   dailyActiveHours: number;
+  startHour: number;
   setTripDuration: (n: number) => void;
   setDailyActiveHours: (n: number) => void;
+  setStartHour: (n: number) => void;
   setActiveDayId: (id: string) => void;
   addToShortlist: (activity: Activity) => void;
   removeFromShortlist: (id: string) => void;
@@ -41,6 +46,7 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
   const [shortlist, setShortlist] = useState<Activity[]>([]);
   const [tripDuration, setTripDuration] = useState(3);
   const [dailyActiveHours, setDailyActiveHours] = useState(8);
+  const [startHour, setStartHour] = useState(9);
   const [days, setDays] = useState<DayPlan[]>([
     { id: 'day-1', name: 'Day 1', activities: [] }
   ]);
@@ -155,8 +161,10 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       activeDayId,
       tripDuration,
       dailyActiveHours,
+      startHour,
       setTripDuration,
       setDailyActiveHours,
+      setStartHour,
       setActiveDayId,
       addToShortlist, 
       removeFromShortlist,
