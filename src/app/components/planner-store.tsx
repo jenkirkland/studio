@@ -1,9 +1,8 @@
-
 "use client"
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import { Activity } from '@/app/lib/activities';
-import { addDays, differenceInDays, startOfDay, format, isBefore } from 'date-fns';
+import { addDays, differenceInDays, startOfDay, format, isBefore, parse } from 'date-fns';
 
 export interface PlannedActivity extends Activity {
   isOptional: boolean;
@@ -42,7 +41,6 @@ interface PlannerContextType {
   departureMethod: TransitMethod;
   departureLocation: string;
   dailyActiveHours: number;
-  defaultStartHour: number;
   setArrivalDate: (d: Date) => void;
   setDepartureDate: (d: Date) => void;
   setArrivalMethod: (m: TransitMethod) => void;
@@ -50,7 +48,6 @@ interface PlannerContextType {
   setDepartureMethod: (m: TransitMethod) => void;
   setDepartureLocation: (l: string) => void;
   setDailyActiveHours: (n: number) => void;
-  setDefaultStartHour: (n: number) => void;
   setActiveDayId: (id: string) => void;
   addToShortlist: (activity: Activity) => void;
   removeFromShortlist: (id: string) => void;
@@ -68,7 +65,6 @@ const PlannerContext = createContext<PlannerContextType | undefined>(undefined);
 export function PlannerProvider({ children }: { children: React.ReactNode }) {
   const [shortlist, setShortlist] = useState<Activity[]>([]);
   const [dailyActiveHours, setDailyActiveHours] = useState(8);
-  const [defaultStartHour, setDefaultStartHour] = useState(9);
   
   const [arrivalDate, setArrivalDate] = useState<Date>(() => startOfDay(new Date()));
   const [departureDate, setDepartureDate] = useState<Date>(() => addDays(startOfDay(new Date()), 2));
@@ -77,10 +73,11 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
   const [departureMethod, setDepartureMethod] = useState<TransitMethod>('car');
   const [departureLocation, setDepartureLocation] = useState('Tewksbury, MA');
   
-  // Calculate days based on arrival/departure dates
-  const currentDays = useMemo(() => {
+  const currentDaysBase = useMemo(() => {
     const start = startOfDay(arrivalDate);
-    const end = isBefore(departureDate, arrivalDate) ? addDays(arrivalDate, 1) : startOfDay(departureDate);
+    let end = startOfDay(departureDate);
+    if (isBefore(end, start)) end = addDays(start, 1);
+    
     const numDays = Math.max(1, differenceInDays(end, start) + 1);
     const res: DayPlan[] = [];
     for (let i = 0; i < numDays; i++) {
@@ -100,23 +97,23 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
     return res;
   }, [arrivalDate, departureDate, arrivalLocation, departureLocation]);
 
-  const [days, setDays] = useState<DayPlan[]>(currentDays);
-  const [activeDayId, setActiveDayId] = useState<string>(currentDays[0]?.id || '');
+  const [days, setDays] = useState<DayPlan[]>(currentDaysBase);
+  const [activeDayId, setActiveDayId] = useState<string>(currentDaysBase[0]?.id || '');
 
-  // Keep activity data when dates change, but sync the day structures
   useEffect(() => {
     setDays(prev => {
-      return currentDays.map(newDay => {
+      const updated = currentDaysBase.map(newDay => {
         const existing = prev.find(d => d.date === newDay.date);
         return existing ? { ...newDay, activities: existing.activities } : newDay;
       });
+      return updated;
     });
-  }, [currentDays]);
+  }, [currentDaysBase]);
 
   useEffect(() => {
     if (days.length > 0) {
-      const stillExists = days.some(d => d.id === activeDayId);
-      if (!activeDayId || !stillExists) {
+      const exists = days.some(d => d.id === activeDayId);
+      if (!activeDayId || !exists) {
         setActiveDayId(days[0].id);
       }
     }
@@ -195,7 +192,6 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       departureMethod,
       departureLocation,
       dailyActiveHours,
-      defaultStartHour,
       setArrivalDate,
       setDepartureDate,
       setArrivalMethod,
@@ -203,7 +199,6 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       setDepartureMethod,
       setDepartureLocation,
       setDailyActiveHours,
-      setDefaultStartHour,
       setActiveDayId,
       addToShortlist, 
       removeFromShortlist,
