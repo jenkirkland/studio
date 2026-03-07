@@ -3,7 +3,7 @@ import {googleAI} from '@genkit-ai/google-genai';
 
 /**
  * Genkit instance configured for the Boston Merrimack Wanderer app.
- * Using 1.5-flash for speed and reliability to avoid Server Action timeouts.
+ * Using gemini-1.5-flash for high performance and stability.
  */
 export const ai = genkit({
   plugins: [googleAI()],

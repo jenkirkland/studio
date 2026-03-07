@@ -83,7 +83,7 @@ export function PlannerUI() {
           id: d.id,
           name: d.name,
           date: d.date,
-          activities: d.activities.map(a => ({
+          activities: (d.activities || []).map(a => ({
             id: a.id,
             name: a.name,
             durationMinutes: a.durationMinutes,
@@ -176,7 +176,7 @@ export function PlannerUI() {
       const result = await refineItineraryChat({
         currentItinerary: days.map(d => ({
           name: d.name,
-          activities: d.activities.map(a => ({
+          activities: (d.activities || []).map(a => ({
             id: a.id,
             name: a.name,
             type: a.type,
@@ -199,7 +199,7 @@ export function PlannerUI() {
         return {
           ...d,
           activities: aiDay.activities.map(a => {
-            const existing = d.activities.find(ex => ex.id === a.id) || shortlist.find(ex => ex.id === a.id);
+            const existing = (d.activities || []).find(ex => ex.id === a.id) || shortlist.find(ex => ex.id === a.id);
             return {
               ...a,
               id: a.id || `ai-${Date.now()}-${Math.random()}`,
@@ -452,8 +452,8 @@ export function PlannerUI() {
                 ))}
               </div>
               <div className="flex items-center gap-2">
-                <AIRecommendations />
                 <div className="flex items-center gap-1 bg-accent/5 p-1 rounded-xl border border-accent/10">
+                  <AIRecommendations />
                   <Button size="sm" variant="ghost" asChild className="text-accent h-7 text-[9px] font-black uppercase hover:bg-white px-2">
                     <a href={generateGoogleMapsLink()} target="_blank" rel="noopener noreferrer"><Map className="w-3 h-3 mr-1" /> Route</a>
                   </Button>
