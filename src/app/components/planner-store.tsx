@@ -77,8 +77,8 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
   const [departureMethod, setDepartureMethod] = useState<TransitMethod>('car');
   const [departureLocation, setDepartureLocation] = useState('Tewksbury, MA');
   
-  // Stabilize initial days to prevent Initializing loop
-  const initialDays = useMemo(() => {
+  // Calculate days based on arrival/departure dates
+  const currentDays = useMemo(() => {
     const start = startOfDay(arrivalDate);
     const end = isBefore(departureDate, arrivalDate) ? addDays(arrivalDate, 1) : startOfDay(departureDate);
     const numDays = Math.max(1, differenceInDays(end, start) + 1);
@@ -92,42 +92,26 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
         date: dateStr,
         activities: [],
         startLocation: i === 0 ? arrivalLocation : 'Tewksbury, MA',
-        endLocation: i === numDays - 1 ? departureLocation : 'Tewksbury, MA'
+        endLocation: i === numDays - 1 ? departureLocation : 'Tewksbury, MA',
+        startHourOverride: i === 0 ? arrivalDate.getHours() : undefined,
+        endHourOverride: i === numDays - 1 ? departureDate.getHours() : undefined,
       });
     }
     return res;
   }, [arrivalDate, departureDate, arrivalLocation, departureLocation]);
 
-  const [days, setDays] = useState<DayPlan[]>(initialDays);
-  const [activeDayId, setActiveDayId] = useState<string>(initialDays[0]?.id || '');
+  const [days, setDays] = useState<DayPlan[]>(currentDays);
+  const [activeDayId, setActiveDayId] = useState<string>(currentDays[0]?.id || '');
 
-  // Synchronize days on date change WITHOUT full re-init if possible
+  // Keep activity data when dates change, but sync the day structures
   useEffect(() => {
-    const start = startOfDay(arrivalDate);
-    const end = isBefore(departureDate, arrivalDate) ? addDays(arrivalDate, 1) : startOfDay(departureDate);
-    const numDays = Math.max(1, differenceInDays(end, start) + 1);
-    
     setDays(prev => {
-      const newDays: DayPlan[] = [];
-      for (let i = 0; i < numDays; i++) {
-        const currentDate = addDays(start, i);
-        const dateStr = format(currentDate, 'yyyy-MM-dd');
-        const existing = prev.find(d => d.date === dateStr);
-        
-        newDays.push({
-          id: existing?.id || `day-${dateStr}`,
-          name: `Day ${i + 1} (${format(currentDate, 'MMM d')})`,
-          date: dateStr,
-          activities: existing?.activities || [],
-          startHourOverride: i === 0 ? arrivalDate.getHours() : undefined,
-          endHourOverride: i === numDays - 1 ? departureDate.getHours() : undefined,
-          startLocation: i === 0 ? arrivalLocation : 'Tewksbury, MA',
-          endLocation: i === numDays - 1 ? departureLocation : 'Tewksbury, MA'
-        });
-      }
-      return newDays;
+      return currentDays.map(newDay => {
+        const existing = prev.find(d => d.date === newDay.date);
+        return existing ? { ...newDay, activities: existing.activities } : newDay;
+      });
     });
-  }, [arrivalDate, departureDate, arrivalLocation, departureLocation]);
+  }, [currentDays]);
 
   useEffect(() => {
     if (days.length > 0) {
