@@ -1,6 +1,7 @@
 'use server';
 /**
  * @fileOverview A Genkit flow that optimizes the order of activities for a day trip, including return travel to Tewksbury.
+ * Respects fixed-time activities (e.g., tickets, reservations).
  */
 
 import {ai} from '@/ai/genkit';
@@ -12,6 +13,7 @@ const ActivitySchema = z.object({
   durationMinutes: z.number(),
   type: z.string(),
   address: z.string(),
+  fixedStartTime: z.string().optional().describe('Format: HH:MM AM/PM. If provided, this activity MUST start at exactly this time.'),
 });
 
 const OptimizeInputSchema = z.object({
@@ -28,6 +30,7 @@ const OptimizedItemSchema = z.object({
   durationMinutes: z.number(),
   travelTimeMinutes: z.number().describe('Estimated travel time from previous location in minutes'),
   reason: z.string().optional(),
+  isFixed: z.boolean().optional().describe('Set to true if this was a fixed-time activity'),
 });
 
 const OptimizeOutputSchema = z.object({
@@ -46,26 +49,26 @@ const optimizePrompt = ai.definePrompt({
   name: 'optimizePrompt',
   input: { schema: OptimizeInputSchema },
   output: { schema: OptimizeOutputSchema },
-  prompt: `You are an expert travel logistics planner for the Boston and Merrimack Valley area.
+  prompt: `You are an expert travel logistics planner for the Boston area.
 The user has selected the following activities for their day starting from Tewksbury, MA:
 {{#each activities}}
-- {{{name}}} ({{{type}}}, {{{durationMinutes}}} mins) located at {{{address}}}
+- {{{name}}} ({{{type}}}, {{{durationMinutes}}} mins) at {{{address}}} {{#if fixedStartTime}}[FIXED AT {{{fixedStartTime}}}]{{/if}}
 {{/each}}
 
 Day starts at {{{startHour}}}:00 AM.
 
 Your task:
-1. Reorder the activities into the most logical sequence to minimize travel time (considering Boston traffic).
-2. For each activity, estimate the travel time from the previous location. If it's the first activity, estimate travel from Tewksbury, MA.
-3. Provide a clear startTime and endTime for each item.
-4. Insert a 60-minute lunch break at an appropriate time (around 12:00 PM - 1:30 PM).
-5. If no 'food' type activities are in the list, suggest a local eating place.
-6. Provide a brief reason for the ordering logic.
-7. CRITICAL: Always include a final "Return to Tewksbury" activity at the very end. 
-   - Name it "Return to Tewksbury".
-   - Set the durationMinutes to 0 (since it is just travel).
-   - The travelTimeMinutes should be the estimated drive time from the LAST activity back to Tewksbury, MA.
-   - The startTime should be immediately after the last activity ends.
+1. Reorder activities to minimize travel, BUT you MUST respect all activities with a "fixedStartTime". 
+2. If an activity is FIXED at 7:30 PM, it MUST start at exactly 7:30 PM in your schedule. Adjust all other activities and travel times around these fixed points.
+3. For each activity, estimate travel time from the previous location (first one is from Tewksbury).
+4. Provide startTime and endTime for each item.
+5. Insert a 60-minute lunch break if there is a gap around 12:00 PM - 1:30 PM.
+6. Suggest a local meal spot if no 'food' activities are in the list.
+7. CRITICAL: Always include a final "Return to Tewksbury" activity at the end. 
+   - Name: "Return to Tewksbury".
+   - durationMinutes: 0.
+   - travelTimeMinutes: estimated drive time from the LAST activity back to Tewksbury.
+   - startTime: immediately after the last activity ends.
 
 Return the final optimized schedule.`,
 });

@@ -4,11 +4,11 @@ import { Activity } from "@/app/lib/activities";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, MapPin, Plus, Trash2, CheckCircle2, Circle, Utensils } from "lucide-react";
+import { Clock, MapPin, Plus, Trash2, CheckCircle2, Circle, Utensils, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ActivityCardProps {
-  activity: Activity & { isOptional?: boolean; isMeal?: boolean };
+  activity: Activity & { isOptional?: boolean; isMeal?: boolean; fixedStartTime?: string };
   onAction?: () => void;
   onToggleOptional?: () => void;
   actionType: 'add' | 'remove';
@@ -31,25 +31,29 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
     'nightlife': "bg-violet-100 text-violet-800 border-violet-200"
   };
 
+  const isCustom = activity.id.startsWith('custom-');
+
   return (
     <Card className={cn(
-      "overflow-hidden transition-all duration-300 border hover:shadow-md",
+      "overflow-hidden transition-all duration-300 border hover:shadow-md w-full",
       activity.isOptional ? "opacity-60 grayscale-[0.3] border-dashed bg-muted/20" : "border-border shadow-sm bg-white",
-      activity.isMeal ? "bg-accent/5 border-accent/20" : ""
+      activity.isMeal ? "bg-accent/5 border-accent/20" : "",
+      activity.fixedStartTime ? "border-accent/40 shadow-accent/5" : ""
     )}>
       <CardHeader className="p-4 pb-2">
         <div className="flex justify-between items-start gap-2">
           <Badge variant="outline" className={cn("capitalize font-bold text-[10px] border px-2 py-0", typeColors[activity.type] || "bg-muted")}>
-            {activity.type}
+            {isCustom ? "Custom Stop" : activity.type}
           </Badge>
           <div className="flex items-center text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
             <Clock className="w-3 h-3 mr-1" />
             {activity.durationMinutes} min
           </div>
         </div>
-        <CardTitle className="text-sm mt-2 leading-tight font-headline font-bold text-foreground line-clamp-1 flex items-center gap-2">
+        <CardTitle className="text-sm mt-2 leading-tight font-headline font-bold text-foreground flex items-center gap-2">
           {activity.isMeal && <Utensils className="w-3.5 h-3.5 text-accent" />}
-          {activity.name}
+          {activity.fixedStartTime && <CalendarClock className="w-3.5 h-3.5 text-accent" />}
+          <span className="line-clamp-1">{activity.name}</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-4 pt-1">
@@ -57,7 +61,7 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
           {activity.description}
         </p>
         <div className="flex items-center text-[10px] text-primary/80 font-medium">
-          <MapPin className="w-3 h-3 mr-1" />
+          <MapPin className="w-3 h-3 mr-1 shrink-0" />
           <span className="truncate">{activity.address}</span>
         </div>
       </CardContent>
@@ -83,17 +87,24 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
             >
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
-            <Button 
-              onClick={onToggleOptional} 
-              variant="outline" 
-              size="sm" 
-              className={cn(
-                "flex-1 text-[10px] h-7 font-bold transition-colors",
-                activity.isOptional ? "bg-accent/10 border-accent text-accent" : "hover:border-accent hover:text-accent"
-              )}
-            >
-              {activity.isOptional ? "Optional" : "Set Optional"}
-            </Button>
+            {!isCustom && (
+              <Button 
+                onClick={onToggleOptional} 
+                variant="outline" 
+                size="sm" 
+                className={cn(
+                  "flex-1 text-[10px] h-7 font-bold transition-colors",
+                  activity.isOptional ? "bg-accent/10 border-accent text-accent" : "hover:border-accent hover:text-accent"
+                )}
+              >
+                {activity.isOptional ? "Optional" : "Set Optional"}
+              </Button>
+            )}
+            {activity.fixedStartTime && (
+              <div className="ml-auto text-[9px] font-black text-accent uppercase flex items-center gap-1">
+                <Clock className="w-3 h-3" /> {activity.fixedStartTime}
+              </div>
+            )}
           </>
         )}
       </CardFooter>

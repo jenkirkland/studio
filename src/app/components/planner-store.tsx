@@ -10,6 +10,7 @@ export interface PlannedActivity extends Activity {
   isMeal?: boolean;
   travelTimeToNext?: number;
   travelTimeFromPrev?: number;
+  fixedStartTime?: string;
 }
 
 export interface DayPlan {
@@ -39,6 +40,7 @@ interface PlannerContextType {
   toggleOptional: (activityId: string, dayId: string) => void;
   addDay: () => void;
   removeDay: (id: string) => void;
+  addCustomActivity: (activity: PlannedActivity, dayId?: string) => void;
 }
 
 const PlannerContext = createContext<PlannerContextType | undefined>(undefined);
@@ -74,12 +76,25 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
     setShortlist(prev => prev.filter(a => a.id !== activity.id));
   }, []);
 
+  const addCustomActivity = useCallback((activity: PlannedActivity, dayId?: string) => {
+    const targetId = dayId || activeDayId;
+    setDays(prev => prev.map(day => {
+      if (day.id === targetId) {
+        return { ...day, activities: [...day.activities, { ...activity, isOptional: false }] };
+      }
+      return day;
+    }));
+  }, [activeDayId]);
+
   const removeActivityFromDay = useCallback((activityId: string, dayId: string) => {
     setDays(prev => prev.map(day => {
       if (day.id === dayId) {
         const removed = day.activities.find(a => a.id === activityId);
-        if (removed && !removed.isMeal) {
-          setShortlist(s => [...s, removed]);
+        if (removed && !removed.isMeal && !activityId.startsWith('custom-')) {
+          setShortlist(s => {
+            if (s.find(a => a.id === removed.id)) return s;
+            return [...s, removed];
+          });
         }
         return { ...day, activities: day.activities.filter(a => a.id !== activityId) };
       }
@@ -117,7 +132,16 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       if (prev.length <= 1) return prev;
       const dayToRemove = prev.find(d => d.id === id);
       if (dayToRemove) {
-        setShortlist(s => [...s, ...dayToRemove.activities.filter(a => !a.isMeal)]);
+        const nonCustoms = dayToRemove.activities.filter(a => !a.isMeal && !a.id.startsWith('custom-'));
+        setShortlist(s => {
+          const newShortlist = [...s];
+          nonCustoms.forEach(nc => {
+            if (!newShortlist.find(item => item.id === nc.id)) {
+              newShortlist.push(nc);
+            }
+          });
+          return newShortlist;
+        });
       }
       const filtered = prev.filter(d => d.id !== id);
       if (activeDayId === id) setActiveDayId(filtered[0].id);
@@ -146,7 +170,8 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       setShortlist,
       toggleOptional,
       addDay,
-      removeDay
+      removeDay,
+      addCustomActivity
     }}>
       {children}
     </PlannerContext.Provider>

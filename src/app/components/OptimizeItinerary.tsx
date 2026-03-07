@@ -30,7 +30,8 @@ export function OptimizeItinerary() {
           name: a.name,
           durationMinutes: a.durationMinutes,
           type: a.type,
-          address: a.address
+          address: a.address,
+          fixedStartTime: a.fixedStartTime
         })),
         startHour: startHour
       });
@@ -52,20 +53,21 @@ export function OptimizeItinerary() {
           endTime: item.endTime,
           isOptional: false,
           isMeal: item.type === 'meal',
-          travelTimeFromPrev: item.travelTimeMinutes
+          travelTimeFromPrev: item.travelTimeMinutes,
+          fixedStartTime: existing?.fixedStartTime || (item.isFixed ? item.startTime : undefined)
         };
       });
 
       setDayActivities(activeDayId, optimizedActivities);
       toast({
         title: "Itinerary Optimized!",
-        description: "We've reordered your stops and calculated travel times.",
+        description: "We've reordered stops around your fixed times and calculated travel.",
       });
     } catch (err) {
       console.error(err);
       toast({
-        title: "AI Service Unavailable",
-        description: "Please ensure your Google AI API key is correctly configured in your environment.",
+        title: "Optimization Failed",
+        description: "Something went wrong while calculating your route. Please try again.",
         variant: "destructive"
       });
     } finally {

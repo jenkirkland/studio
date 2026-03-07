@@ -8,10 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Map, Sparkles, Navigation, Info, Plus, Search, ListTodo, Trash2, Clock, LayoutDashboard, Settings2, Utensils, Loader2, Wand2 } from "lucide-react";
+import { Map, Sparkles, Navigation, Info, Plus, Search, ListTodo, Trash2, Clock, LayoutDashboard, Settings2, Utensils, Loader2, Wand2, CalendarClock } from "lucide-react";
 import { DiscoveryTable } from "./DiscoveryTable";
 import { AIRecommendations } from "./AIRecommendations";
 import { OptimizeItinerary } from "./OptimizeItinerary";
+import { CustomActivityDialog } from "./CustomActivityDialog";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { suggestNearbyFood } from "@/ai/flows/suggest-nearby-food-flow";
@@ -93,7 +94,8 @@ export function PlannerUI() {
               name: a.name,
               durationMinutes: a.durationMinutes,
               type: a.type,
-              address: a.address
+              address: a.address,
+              fixedStartTime: a.fixedStartTime
             })),
             startHour: startHour
           });
@@ -112,7 +114,8 @@ export function PlannerUI() {
                 endTime: item.endTime,
                 isOptional: false,
                 isMeal: item.type === 'meal',
-                travelTimeFromPrev: item.travelTimeMinutes
+                travelTimeFromPrev: item.travelTimeMinutes,
+                fixedStartTime: existing?.fixedStartTime || (item.isFixed ? item.startTime : undefined)
               };
             });
             optimizedDays.push({ ...day, activities: planned });
@@ -251,14 +254,18 @@ export function PlannerUI() {
                 </div>
               </div>
 
-              <Button 
-                onClick={handleAutoGroupAndOptimize}
-                disabled={shortlist.length === 0 || isGrouping}
-                className="w-full bg-primary hover:bg-primary/90 text-white font-black text-xs h-12 rounded-xl shadow-lg shadow-primary/20"
-              >
-                {isGrouping ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                Auto-Group & Optimize
-              </Button>
+              <div className="space-y-3 pt-2">
+                <Button 
+                  onClick={handleAutoGroupAndOptimize}
+                  disabled={shortlist.length === 0 || isGrouping}
+                  className="w-full bg-primary hover:bg-primary/90 text-white font-black text-xs h-12 rounded-xl shadow-lg shadow-primary/20"
+                >
+                  {isGrouping ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                  Auto-Group & Optimize
+                </Button>
+                
+                <CustomActivityDialog />
+              </div>
             </div>
 
             <div className="bg-white p-4 rounded-3xl border border-primary/5 shadow-md flex-1">
@@ -295,18 +302,27 @@ export function PlannerUI() {
             <div className="bg-white p-4 rounded-3xl border shadow-md flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 {days.map((day) => (
-                  <Button
-                    key={day.id}
-                    variant={activeDayId === day.id ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setActiveDayId(day.id)}
-                    className={cn(
-                      "rounded-xl px-5 h-10 text-xs font-black transition-all",
-                      activeDayId === day.id ? "bg-primary text-white" : "text-muted-foreground"
+                  <div key={day.id} className="relative group">
+                    <Button
+                      variant={activeDayId === day.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setActiveDayId(day.id)}
+                      className={cn(
+                        "rounded-xl px-5 h-10 text-xs font-black transition-all pr-8",
+                        activeDayId === day.id ? "bg-primary text-white" : "text-muted-foreground"
+                      )}
+                    >
+                      {day.name}
+                    </Button>
+                    {days.length > 1 && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); removeDay(day.id); }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     )}
-                  >
-                    {day.name}
-                  </Button>
+                  </div>
                 ))}
                 <Button variant="ghost" size="icon" onClick={addDay} className="h-10 w-10 rounded-xl border border-dashed border-primary/30">
                   <Plus className="w-4 h-4 text-primary" />
@@ -359,7 +375,7 @@ export function PlannerUI() {
                   <div className="space-y-12 pb-8 ml-4">
                     {activeDay.activities.map((activity, index) => (
                       <div key={activity.id} className="relative pl-12">
-                        {activity.travelTimeFromPrev && (
+                        {activity.travelTimeFromPrev !== undefined && (
                           <div className="absolute -top-8 left-14 flex items-center gap-2">
                             <div className="w-1 h-1 rounded-full bg-accent" />
                             <span className="text-[9px] font-black text-accent bg-accent/5 px-2 py-0.5 rounded border border-accent/10">
@@ -372,16 +388,24 @@ export function PlannerUI() {
                           <div className="absolute top-10 left-[1.125rem] w-0.5 h-[calc(100%+2rem)] bg-primary/10" />
                         )}
                         
-                        <div className="absolute left-0 top-0 w-9 h-9 rounded-xl border-2 border-primary bg-white flex items-center justify-center font-black text-xs text-primary shadow-sm z-10">
-                          {activity.scheduledTime ? <Clock className="w-4 h-4" /> : index + 1}
+                        <div className={cn(
+                          "absolute left-0 top-0 w-9 h-9 rounded-xl border-2 flex items-center justify-center font-black text-xs shadow-sm z-10",
+                          activity.fixedStartTime ? "bg-accent border-accent text-white" : "bg-white border-primary text-primary"
+                        )}>
+                          {activity.fixedStartTime ? <CalendarClock className="w-4 h-4" /> : (activity.scheduledTime ? <Clock className="w-4 h-4" /> : index + 1)}
                         </div>
 
                         <div className="flex flex-col gap-2">
-                          {activity.scheduledTime && (
-                            <span className="text-[10px] font-black text-primary/70 uppercase">
-                              {activity.scheduledTime} {activity.endTime && `— ${activity.endTime}`}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {activity.scheduledTime && (
+                              <span className="text-[10px] font-black text-primary/70 uppercase">
+                                {activity.scheduledTime} {activity.endTime && `— ${activity.endTime}`}
+                              </span>
+                            )}
+                            {activity.fixedStartTime && (
+                              <Badge variant="default" className="bg-accent text-[8px] font-black uppercase py-0 px-1.5 h-4">Fixed Point</Badge>
+                            )}
+                          </div>
                           <ActivityCard 
                             activity={activity} 
                             actionType="remove"
