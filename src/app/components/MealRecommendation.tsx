@@ -1,9 +1,10 @@
+
 "use client"
 
 import { useState } from "react";
 import { PlannedActivity, usePlanner } from "./planner-store";
 import { Button } from "@/components/ui/button";
-import { Loader2, Utensils, Check, ExternalLink, Info } from "lucide-react";
+import { Loader2, Utensils, Check, ExternalLink } from "lucide-react";
 import { suggestNearbyFood } from "@/ai/flows/suggest-nearby-food-flow";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -31,8 +32,14 @@ export function MealRecommendation({ activity, prevActivity, nextActivity, dayId
         mealType: activity.name.toLowerCase().includes('dinner') ? 'Dinner' : 'Lunch'
       });
       setSuggestions(result.suggestions);
-    } catch (err) {
-      toast({ title: "Could not find food", variant: "destructive" });
+    } catch (err: any) {
+      console.error(err);
+      const isQuotaError = err.message?.includes('429') || err.message?.includes('RESOURCE_EXHAUSTED');
+      toast({ 
+        title: isQuotaError ? "Too Many Requests" : "Could not find food", 
+        description: isQuotaError ? "AI is busy. Please try again in 30 seconds." : "Search failed.",
+        variant: "destructive" 
+      });
     } finally {
       setLoading(false);
     }

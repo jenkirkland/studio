@@ -43,9 +43,10 @@ export function AIRecommendations() {
         remainingBudgetedMinutes: remainingMinutes
       });
       setRecommendations(result.suggestedActivities);
-    } catch (err) {
+    } catch (err: any) {
       console.error("AI Recommendation Error:", err);
-      setError("AI suggestions currently unavailable. Please try again later.");
+      const isQuotaError = err.message?.includes('429') || err.message?.includes('RESOURCE_EXHAUSTED');
+      setError(isQuotaError ? "Too many requests. Please wait a moment." : "AI suggestions currently unavailable.");
     } finally {
       setLoading(false);
     }

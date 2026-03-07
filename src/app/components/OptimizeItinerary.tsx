@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from 'react';
@@ -33,7 +34,10 @@ export function OptimizeItinerary() {
           address: a.address,
           fixedStartTime: a.fixedStartTime
         })),
-        startHour: startHour
+        startHour: activeDay.startHourOverride || startHour || 9,
+        endHour: activeDay.endHourOverride,
+        startLocation: activeDay.startLocation,
+        endLocation: activeDay.endLocation
       });
 
       if (!result?.itinerary) {
@@ -63,11 +67,12 @@ export function OptimizeItinerary() {
         title: "Itinerary Optimized!",
         description: "We've reordered stops around your fixed times and calculated travel.",
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      const isQuotaError = err.message?.includes('429') || err.message?.includes('RESOURCE_EXHAUSTED');
       toast({
-        title: "Optimization Failed",
-        description: "Something went wrong while calculating your route. Please try again.",
+        title: isQuotaError ? "Too Many Requests" : "Optimization Failed",
+        description: isQuotaError ? "AI limit reached. Please wait 30 seconds and try again." : "Something went wrong while calculating your route.",
         variant: "destructive"
       });
     } finally {
