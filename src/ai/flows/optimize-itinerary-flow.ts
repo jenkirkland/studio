@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview A Genkit flow that optimizes the order of activities for a day trip.
+ * @fileOverview A Genkit flow that optimizes the order of activities for a day trip, including return travel to Tewksbury.
  */
 
 import {ai} from '@/ai/genkit';
@@ -47,7 +47,7 @@ const optimizePrompt = ai.definePrompt({
   input: { schema: OptimizeInputSchema },
   output: { schema: OptimizeOutputSchema },
   prompt: `You are an expert travel logistics planner for the Boston and Merrimack Valley area.
-The user has selected the following activities for their day starting from Tewksbury, MA (if not specified otherwise):
+The user has selected the following activities for their day starting from Tewksbury, MA:
 {{#each activities}}
 - {{{name}}} ({{{type}}}, {{{durationMinutes}}} mins) located at {{{address}}}
 {{/each}}
@@ -59,8 +59,13 @@ Your task:
 2. For each activity, estimate the travel time from the previous location. If it's the first activity, estimate travel from Tewksbury, MA.
 3. Provide a clear startTime and endTime for each item.
 4. Insert a 60-minute lunch break at an appropriate time (around 12:00 PM - 1:30 PM).
-5. If no 'food' type activities are in the list, suggest a local eating place (e.g., in the North End, Seaport, or Tewksbury).
+5. If no 'food' type activities are in the list, suggest a local eating place.
 6. Provide a brief reason for the ordering logic.
+7. CRITICAL: Always include a final "Return to Tewksbury" activity at the very end. 
+   - Name it "Return to Tewksbury".
+   - Set the durationMinutes to 0 (since it is just travel).
+   - The travelTimeMinutes should be the estimated drive time from the LAST activity back to Tewksbury, MA.
+   - The startTime should be immediately after the last activity ends.
 
 Return the final optimized schedule.`,
 });
