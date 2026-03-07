@@ -1,0 +1,10 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hero-wanderer",
+      "description": "Scenic view of the Merrimack River at sunset",
+      "imageUrl": "https://picsum.photos/seed/merrimack/1200/600",
+      "imageHint": "river landscape"
+    }
+  ]
+}
