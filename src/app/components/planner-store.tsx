@@ -111,7 +111,7 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
     });
   }, [currentDaysBase]);
 
-  // Ensure an active day is always selected to prevent "Initializing" hang
+  // Ensure an active day is always selected
   useEffect(() => {
     if (days.length > 0) {
       const exists = days.some(d => d.id === activeDayId);

@@ -33,7 +33,6 @@ import { MealRecommendation } from "./MealRecommendation";
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { optimizeFullTrip } from "@/ai/flows/optimize-itinerary-flow";
-import { refineItineraryChat } from "@/ai/flows/refine-itinerary-chat-flow";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ACTIVITIES } from "../lib/activities";
@@ -66,7 +65,6 @@ export function PlannerUI() {
   } = usePlanner();
   
   const [isOptimizing, setIsOptimizing] = useState(false);
-  const [chatInput, setChatInput] = useState("");
 
   const activeDay = useMemo(() => {
     return days.find(d => d.id === activeDayId) || days[0];
