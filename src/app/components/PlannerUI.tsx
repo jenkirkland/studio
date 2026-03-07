@@ -6,7 +6,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Map, Sparkles, Navigation, Info, Plus, Calendar as CalendarIcon, Search, ListTodo, Trash2, Clock, ChevronRight, LayoutDashboard } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Map, Sparkles, Navigation, Info, Plus, Calendar as CalendarIcon, Search, ListTodo, Trash2, Clock, LayoutDashboard, Settings2, Wand2 } from "lucide-react";
 import { DiscoveryTable } from "./DiscoveryTable";
 import { AIRecommendations } from "./AIRecommendations";
 import { OptimizeItinerary } from "./OptimizeItinerary";
@@ -23,7 +25,12 @@ export function PlannerUI() {
     removeDay,
     addActivityToDay, 
     removeActivityFromDay, 
-    toggleOptional 
+    toggleOptional,
+    tripDuration,
+    setTripDuration,
+    dailyActiveHours,
+    setDailyActiveHours,
+    distributeShortlistIntoDays
   } = usePlanner();
   
   const [showAI, setShowAI] = useState(false);
@@ -49,10 +56,10 @@ export function PlannerUI() {
       <div className="flex items-center justify-center mb-8">
         <TabsList className="grid w-full max-w-md grid-cols-2 bg-muted p-1 border shadow-sm rounded-xl">
           <TabsTrigger value="discover" className="flex items-center gap-2 rounded-lg py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">
-            <Search className="h-4 w-4" /> Discover
+            <Search className="h-4 w-4" /> Discovery Library
           </TabsTrigger>
           <TabsTrigger value="plan" className="flex items-center gap-2 rounded-lg py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">
-            <ListTodo className="h-4 w-4" /> Plan My Trip
+            <ListTodo className="h-4 w-4" /> Build My Plan
           </TabsTrigger>
         </TabsList>
       </div>
@@ -61,16 +68,52 @@ export function PlannerUI() {
         <div className="bg-white rounded-2xl p-6 border shadow-lg">
           <div className="mb-6">
             <h2 className="text-2xl font-black text-foreground mb-1">Activity Library</h2>
-            <p className="text-muted-foreground text-sm">Explore curated experiences. Star items to add them to your planning shortlist.</p>
+            <p className="text-muted-foreground text-sm">Star the activities you're interested in, then head to the Plan tab to build your itinerary.</p>
           </div>
           <DiscoveryTable />
         </div>
       </TabsContent>
 
       <TabsContent value="plan" className="animate-in fade-in duration-300">
-        <div className="flex flex-col xl:flex-row gap-6">
-          {/* Sidebar: Shortlist */}
-          <div className="w-full xl:w-80 flex flex-col gap-4">
+        <div className="flex flex-col xl:flex-row gap-8">
+          {/* Left Column: Shortlist & Config */}
+          <div className="w-full xl:w-96 flex flex-col gap-6">
+            {/* Trip Config */}
+            <div className="bg-white p-5 rounded-2xl border border-primary/20 shadow-sm space-y-4">
+              <div className="flex items-center gap-2 text-primary">
+                <Settings2 className="w-4 h-4" />
+                <h3 className="text-sm font-black uppercase tracking-wider">Trip Settings</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase font-bold text-muted-foreground">Days</Label>
+                  <Input 
+                    type="number" 
+                    value={tripDuration} 
+                    onChange={(e) => setTripDuration(parseInt(e.target.value) || 1)}
+                    className="h-9 text-xs font-bold"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] uppercase font-bold text-muted-foreground">Max Hours/Day</Label>
+                  <Input 
+                    type="number" 
+                    value={dailyActiveHours} 
+                    onChange={(e) => setDailyActiveHours(parseInt(e.target.value) || 1)}
+                    className="h-9 text-xs font-bold"
+                  />
+                </div>
+              </div>
+              <Button 
+                onClick={distributeShortlistIntoDays}
+                disabled={shortlist.length === 0}
+                className="w-full bg-accent hover:bg-accent/90 text-white font-black text-xs h-9 shadow-md"
+              >
+                <Wand2 className="w-3.5 h-3.5 mr-2" />
+                Auto-Group Activities
+              </Button>
+            </div>
+
             <div className="flex items-center justify-between px-1">
               <div>
                 <h3 className="text-lg font-black text-foreground">Interested</h3>
@@ -87,8 +130,8 @@ export function PlannerUI() {
                   <div className="bg-white p-3 rounded-full mb-3 shadow-sm border">
                     <Search className="w-6 h-6 text-primary/40" />
                   </div>
-                  <p className="font-bold text-sm mb-1">Nothing here yet</p>
-                  <p className="text-[11px]">Go to 'Discover' and star activities to add them to this list.</p>
+                  <p className="font-bold text-sm mb-1">Star some experiences!</p>
+                  <p className="text-[11px]">Go to 'Discovery Library' and star activities to see them here.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -105,7 +148,7 @@ export function PlannerUI() {
             </ScrollArea>
           </div>
 
-          {/* Main Planning Area */}
+          {/* Right Column: Main Planning Area */}
           <div className="flex-1 flex flex-col gap-6">
             {/* Toolbar */}
             <div className="bg-white p-4 rounded-2xl border shadow-sm flex flex-wrap items-center justify-between gap-4">
@@ -150,7 +193,7 @@ export function PlannerUI() {
                   )}
                 >
                   <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                  Smart Suggestions
+                  Ideas
                 </Button>
                 <Button 
                   size="sm"
@@ -159,7 +202,7 @@ export function PlannerUI() {
                 >
                   <a href={generateGoogleMapsLink()} target="_blank" rel="noopener noreferrer">
                     <Map className="w-3.5 h-3.5 mr-1.5" />
-                    View Map
+                    Map
                   </a>
                 </Button>
               </div>
@@ -171,13 +214,18 @@ export function PlannerUI() {
               </div>
             )}
 
-            {/* Itinerary Column */}
-            <div className="bg-white rounded-3xl border shadow-xl p-6 min-h-[600px] flex flex-col relative overflow-hidden">
+            {/* Itinerary Area */}
+            <div className="bg-white rounded-3xl border shadow-xl p-8 min-h-[600px] flex flex-col relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/10" />
               
-              <div className="flex items-center gap-3 mb-8 pl-4">
-                <LayoutDashboard className="w-6 h-6 text-primary" />
-                <h2 className="text-2xl font-black text-foreground">{activeDay.name} Itinerary</h2>
+              <div className="flex items-center gap-3 mb-10 pl-4">
+                <div className="bg-primary/10 p-2.5 rounded-xl">
+                  <LayoutDashboard className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-foreground">{activeDay.name} Final Plan</h2>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">Day Itinerary</p>
+                </div>
               </div>
 
               {activeDay.activities.length === 0 ? (
@@ -185,32 +233,32 @@ export function PlannerUI() {
                   <div className="w-24 h-24 bg-primary/5 rounded-full flex items-center justify-center mb-6 border border-primary/10">
                     <Navigation className="w-10 h-10 text-primary opacity-20" />
                   </div>
-                  <h3 className="font-bold text-xl text-foreground mb-3">Your Itinerary is Empty</h3>
+                  <h3 className="font-bold text-xl text-foreground mb-3">Plan is empty</h3>
                   <p className="max-w-xs text-xs text-muted-foreground leading-relaxed">
-                    Start adding activities from your starred list on the left. You can then toggle them as optional or use the AI to optimize your day.
+                    Add activities from your shortlisted items on the left or use the Auto-Group feature to fill your days automatically.
                   </p>
                 </div>
               ) : (
                 <>
                   <ScrollArea className="flex-1 pr-4">
-                    <div className="space-y-8 pb-8">
+                    <div className="space-y-10 pb-10">
                       {activeDay.activities.map((activity, index) => (
-                        <div key={activity.id} className="relative group pl-10">
+                        <div key={activity.id} className="relative group pl-12">
                           {/* Progress Line */}
                           {index < activeDay.activities.length - 1 && (
-                            <div className="absolute top-8 left-[1.125rem] w-0.5 h-[calc(100%+2rem)] bg-gradient-to-b from-primary/30 to-transparent" />
+                            <div className="absolute top-10 left-[1.375rem] w-0.5 h-[calc(100%+2.5rem)] bg-gradient-to-b from-primary/30 to-transparent" />
                           )}
                           
                           {/* Timeline Marker */}
                           <div className="absolute left-0 top-0 flex flex-col items-center">
                             <div className={cn(
-                              "w-9 h-9 rounded-full border-2 flex items-center justify-center font-black text-xs bg-white shadow-sm z-10 transition-transform group-hover:scale-110",
+                              "w-11 h-11 rounded-full border-2 flex items-center justify-center font-black text-sm bg-white shadow-sm z-10 transition-transform group-hover:scale-110",
                               activity.isMeal ? "border-accent text-accent" : "border-primary text-primary"
                             )}>
-                              {activity.scheduledTime ? <Clock className="w-4 h-4" /> : index + 1}
+                              {activity.scheduledTime ? <Clock className="w-5 h-5" /> : index + 1}
                             </div>
                             {activity.scheduledTime && (
-                              <span className="text-[9px] font-bold text-primary mt-2 bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10 whitespace-nowrap uppercase">
+                              <span className="text-[10px] font-black text-primary mt-2 bg-primary/5 px-2.5 py-0.5 rounded-full border border-primary/10 whitespace-nowrap uppercase tracking-tighter">
                                 {activity.scheduledTime}
                               </span>
                             )}
@@ -230,24 +278,24 @@ export function PlannerUI() {
                   </ScrollArea>
 
                   {/* Summary Footer */}
-                  <div className="mt-6 pt-6 border-t flex flex-wrap gap-6 items-center justify-between">
-                    <div className="flex gap-8">
+                  <div className="mt-8 pt-8 border-t flex flex-wrap gap-10 items-center justify-between">
+                    <div className="flex gap-10">
                       <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Active Time</p>
-                        <p className="text-2xl font-black text-primary">
-                          {Math.floor(totalDuration / 60)}h <span className="text-sm font-bold">{totalDuration % 60}m</span>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">Active Time</p>
+                        <p className="text-3xl font-black text-primary">
+                          {Math.floor(totalDuration / 60)}h <span className="text-base font-bold">{totalDuration % 60}m</span>
                         </p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Travel Estimate</p>
-                        <p className="text-2xl font-black text-accent">
-                          ~{totalDriveTime} <span className="text-sm font-bold">min</span>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">Drive Est.</p>
+                        <p className="text-3xl font-black text-accent">
+                          ~{totalDriveTime} <span className="text-base font-bold">min</span>
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground bg-muted/30 px-4 py-2 rounded-xl border">
-                      <Info className="w-3.5 h-3.5 text-primary" />
-                      <span>Optimizing adds meal breaks and reorders stops.</span>
+                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground bg-primary/5 px-5 py-3 rounded-2xl border border-primary/10 max-w-sm">
+                      <Info className="w-4 h-4 text-primary shrink-0" />
+                      <span>The "Optimize" button will add meal breaks and reorder stops for efficiency.</span>
                     </div>
                   </div>
                 </>

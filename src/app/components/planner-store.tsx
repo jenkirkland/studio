@@ -19,6 +19,10 @@ interface PlannerContextType {
   shortlist: Activity[];
   days: DayPlan[];
   activeDayId: string;
+  tripDuration: number;
+  dailyActiveHours: number;
+  setTripDuration: (n: number) => void;
+  setDailyActiveHours: (n: number) => void;
   setActiveDayId: (id: string) => void;
   addToShortlist: (activity: Activity) => void;
   removeFromShortlist: (id: string) => void;
@@ -28,22 +32,19 @@ interface PlannerContextType {
   toggleOptional: (activityId: string, dayId: string) => void;
   addDay: () => void;
   removeDay: (id: string) => void;
-  availableActivities: Activity[];
+  distributeShortlistIntoDays: () => void;
 }
 
 const PlannerContext = createContext<PlannerContextType | undefined>(undefined);
 
 export function PlannerProvider({ children }: { children: React.ReactNode }) {
   const [shortlist, setShortlist] = useState<Activity[]>([]);
+  const [tripDuration, setTripDuration] = useState(3);
+  const [dailyActiveHours, setDailyActiveHours] = useState(8);
   const [days, setDays] = useState<DayPlan[]>([
     { id: 'day-1', name: 'Day 1', activities: [] }
   ]);
   const [activeDayId, setActiveDayId] = useState<string>('day-1');
-
-  const availableActivities = ACTIVITIES.filter(
-    a => !shortlist.some(s => s.id === a.id) && 
-         !days.some(d => d.activities.some(da => da.id === a.id))
-  );
 
   const addToShortlist = useCallback((activity: Activity) => {
     setShortlist(prev => {
@@ -117,11 +118,45 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
     });
   }, [activeDayId]);
 
+  const distributeShortlistIntoDays = useCallback(() => {
+    const maxMinutesPerDay = dailyActiveHours * 60;
+    const newDays: DayPlan[] = [];
+    
+    // Reset days based on duration
+    for (let i = 0; i < tripDuration; i++) {
+      newDays.push({ id: `day-${i + 1}`, name: `Day ${i + 1}`, activities: [] });
+    }
+
+    const items = [...shortlist];
+    let currentDayIdx = 0;
+    
+    while (items.length > 0 && currentDayIdx < tripDuration) {
+      const activity = items[0];
+      const currentDayTime = newDays[currentDayIdx].activities.reduce((s, a) => s + a.durationMinutes, 0);
+      
+      // Allow for travel time estimate (20 mins per activity)
+      if (currentDayTime + activity.durationMinutes + 20 <= maxMinutesPerDay) {
+        newDays[currentDayIdx].activities.push({ ...activity, isOptional: false });
+        items.shift();
+      } else {
+        currentDayIdx++;
+      }
+    }
+
+    setDays(newDays);
+    setShortlist(items); // Remaining items stay in shortlist
+    setActiveDayId(newDays[0].id);
+  }, [shortlist, tripDuration, dailyActiveHours]);
+
   return (
     <PlannerContext.Provider value={{ 
       shortlist, 
       days, 
       activeDayId,
+      tripDuration,
+      dailyActiveHours,
+      setTripDuration,
+      setDailyActiveHours,
       setActiveDayId,
       addToShortlist, 
       removeFromShortlist,
@@ -131,7 +166,7 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       toggleOptional,
       addDay,
       removeDay,
-      availableActivities
+      distributeShortlistIntoDays
     }}>
       {children}
     </PlannerContext.Provider>

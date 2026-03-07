@@ -5,8 +5,7 @@ import { usePlanner } from './planner-store';
 import { suggestComplementaryActivities } from '@/ai/flows/suggest-complementary-activities-flow';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Sparkles, Loader2, Plus, AlertCircle, Lightbulb } from 'lucide-react';
+import { Loader2, Sparkles, Plus, AlertCircle, Lightbulb } from 'lucide-react';
 import { ACTIVITIES } from '../lib/activities';
 
 interface Suggestion {
@@ -15,7 +14,7 @@ interface Suggestion {
 }
 
 export function AIRecommendations() {
-  const { days, activeDayId, addActivityToDay } = usePlanner();
+  const { days, activeDayId, addActivityToDay, dailyActiveHours } = usePlanner();
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState<Suggestion[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +25,9 @@ export function AIRecommendations() {
     setLoading(true);
     setError(null);
     try {
+      const currentDuration = activeDay.activities.reduce((s, p) => s + p.durationMinutes, 0);
+      const remainingMinutes = (dailyActiveHours * 60) - currentDuration;
+
       const result = await suggestComplementaryActivities({
         selectedActivities: activeDay.activities.map(p => ({
           name: p.name,
@@ -41,12 +43,12 @@ export function AIRecommendations() {
           durationMinutes: a.durationMinutes,
           address: a.address,
         })),
-        remainingBudgetedMinutes: 480 - activeDay.activities.reduce((s, p) => s + p.durationMinutes, 0)
+        remainingBudgetedMinutes: remainingMinutes
       });
       setRecommendations(result.suggestedActivities);
     } catch (err) {
       console.error("AI Recommendation Error:", err);
-      setError("Failed to fetch suggestions. Our AI might be busy, please try again.");
+      setError("AI suggestions currently unavailable. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -63,7 +65,7 @@ export function AIRecommendations() {
   };
 
   return (
-    <Card className="border-2 border-primary/30 bg-primary/5 shadow-md mb-6 overflow-hidden">
+    <Card className="border-2 border-primary/20 bg-primary/5 shadow-md mb-6 overflow-hidden">
       <CardHeader className="p-4 pb-2 bg-white flex flex-row items-center justify-between space-y-0 border-b">
         <div className="flex items-center gap-2">
           <div className="bg-primary/10 p-2 rounded-lg">
@@ -82,7 +84,7 @@ export function AIRecommendations() {
           className="bg-primary hover:bg-primary/90 text-white shadow-sm h-8 px-4"
         >
           {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> : <Sparkles className="w-3.5 h-3.5 mr-2" />}
-          {recommendations ? 'Refresh' : 'Find Matches'}
+          {recommendations ? 'Refresh' : 'Get Ideas'}
         </Button>
       </CardHeader>
       <CardContent className="p-4">
@@ -95,7 +97,7 @@ export function AIRecommendations() {
         {recommendations && recommendations.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {recommendations.map((rec, idx) => (
-              <div key={idx} className="bg-white rounded-xl p-3 border border-primary/20 flex flex-col justify-between shadow-sm hover:border-primary/50 transition-colors">
+              <div key={idx} className="bg-white rounded-xl p-3 border border-primary/20 flex flex-col justify-between shadow-sm hover:border-primary/40 transition-colors">
                 <div>
                   <h4 className="font-black text-xs text-foreground mb-1">{rec.name}</h4>
                   <p className="text-[10px] text-muted-foreground italic leading-tight mb-3">
@@ -120,7 +122,7 @@ export function AIRecommendations() {
         ) : !loading && (
           <div className="text-center py-4">
             <p className="text-[11px] text-muted-foreground">
-              Not sure what to do next? Click <strong>'Find Matches'</strong> to see activities that complement your current plan.
+              Need inspiration? Click <strong>'Get Ideas'</strong> to see activities that fit your remaining time today.
             </p>
           </div>
         )}
