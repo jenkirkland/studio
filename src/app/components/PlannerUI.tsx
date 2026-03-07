@@ -75,6 +75,7 @@ export function PlannerUI() {
   const activeDay = days.find(d => d.id === activeDayId) || days[0];
 
   const handleGlobalOptimization = async () => {
+    if (days.length === 0) return;
     setIsOptimizing(true);
     try {
       const result = await optimizeFullTrip({
@@ -105,11 +106,15 @@ export function PlannerUI() {
         dailyActiveHours: dailyActiveHours
       });
 
+      if (!result || !result.optimizedDays) {
+        throw new Error("AI service returned an empty plan. Please try again.");
+      }
+
       const updatedDays = days.map(d => {
         const optimizedDay = result.optimizedDays.find(od => od.id === d.id);
         if (!optimizedDay) return d;
 
-        const activities: PlannedActivity[] = optimizedDay.activities.map(item => {
+        const activities: PlannedActivity[] = (optimizedDay.activities || []).map(item => {
           const existing = [...d.activities, ...shortlist].find(a => a.id === item.id);
           return {
             id: item.id || `ai-${Date.now()}-${Math.random()}`,
@@ -131,7 +136,7 @@ export function PlannerUI() {
       });
 
       setDays(updatedDays);
-      setShortlist(ACTIVITIES.filter(a => result.remainingWishlistIds.includes(a.id)));
+      setShortlist(ACTIVITIES.filter(a => result.remainingWishlistIds?.includes(a.id)));
       
       toast({
         title: "Itinerary Optimized",
@@ -144,7 +149,7 @@ export function PlannerUI() {
         title: isQuotaError ? "AI is Busy" : "Optimization Failed",
         description: isQuotaError 
           ? "The AI is at capacity. Please wait about 30 seconds and try again." 
-          : "Something went wrong while building your multi-day plan.",
+          : "Something went wrong while building your multi-day plan. Please check your internet connection.",
         variant: "destructive"
       });
     } finally {
@@ -183,6 +188,10 @@ export function PlannerUI() {
         userPrompt: chatInput
       });
 
+      if (!result || !result.updatedItinerary) {
+        throw new Error("Assistant couldn't process changes. Please try again.");
+      }
+
       const updatedDays = days.map((d) => {
         const aiDay = result.updatedItinerary.find(rd => rd.name === d.name);
         if (!aiDay) return d;
@@ -210,7 +219,7 @@ export function PlannerUI() {
       const isQuotaError = err.message?.includes('429') || err.message?.includes('RESOURCE_EXHAUSTED');
       toast({ 
         title: isQuotaError ? "AI Assistant Busy" : "Chat Error", 
-        description: isQuotaError ? "Please wait a moment before sending more requests." : "Could not refine itinerary.", 
+        description: isQuotaError ? "Please wait a moment before sending more requests." : "Could not refine itinerary. Try a shorter request.", 
         variant: "destructive" 
       });
     } finally {
@@ -219,7 +228,7 @@ export function PlannerUI() {
   };
 
   const generateGoogleMapsLink = () => {
-    if (!activeDay || activeDay.activities.length === 0) return "https://www.google.com/maps";
+    if (!activeDay || !activeDay.activities || activeDay.activities.length === 0) return "https://www.google.com/maps";
     const origin = encodeURIComponent(activeDay.startLocation || "Tewksbury,MA");
     const stops = activeDay.activities
       .filter(a => !a.isOptional)
@@ -466,7 +475,7 @@ export function PlannerUI() {
                 </div>
               </div>
 
-              {activeDay.activities.length === 0 ? (
+              {(!activeDay.activities || activeDay.activities.length === 0) ? (
                 <div className="py-24 text-center opacity-40">
                   <LayoutDashboard className="w-8 h-8 mx-auto mb-4" />
                   <p className="text-sm font-black uppercase tracking-widest">No activities scheduled yet</p>
