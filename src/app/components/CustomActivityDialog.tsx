@@ -7,24 +7,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, CalendarClock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarClock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 export function CustomActivityDialog() {
-  const { addCustomActivity, activeDayId } = usePlanner();
+  const { addCustomActivity, days } = usePlanner();
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     address: "",
     duration: "60",
     fixedTime: "",
-    description: ""
+    description: "",
+    date: ""
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.address) {
-      toast({ title: "Missing fields", description: "Name and address are required.", variant: "destructive" });
+    if (!formData.name || !formData.address || !formData.date) {
+      toast({ title: "Missing fields", description: "Name, address, and date are required.", variant: "destructive" });
       return;
     }
 
@@ -34,14 +37,15 @@ export function CustomActivityDialog() {
       address: formData.address,
       description: formData.description || "Custom planned event.",
       durationMinutes: parseInt(formData.duration) || 60,
-      type: 'entertainment', // default
+      type: 'entertainment',
       isOptional: false,
-      fixedStartTime: formData.fixedTime || undefined
+      fixedStartTime: formData.fixedTime || undefined,
+      date: formData.date
     };
 
-    addCustomActivity(customActivity, activeDayId);
+    addCustomActivity(customActivity, formData.date);
     setOpen(false);
-    setFormData({ name: "", address: "", duration: "60", fixedTime: "", description: "" });
+    setFormData({ name: "", address: "", duration: "60", fixedTime: "", description: "", date: "" });
     toast({ title: "Event Added", description: `${formData.name} added to your plan.` });
   };
 
@@ -59,51 +63,41 @@ export function CustomActivityDialog() {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
+            <Label className="text-[10px] font-black uppercase text-muted-foreground">Select Day *</Label>
+            <Select onValueChange={(v) => setFormData({...formData, date: v})} value={formData.date}>
+              <SelectTrigger>
+                <SelectValue placeholder="Which day?" />
+              </SelectTrigger>
+              <SelectContent>
+                {days.map(day => (
+                  <SelectItem key={day.date} value={day.date}>
+                    {day.name} ({format(new Date(day.date + 'T00:00:00'), 'MMM d')})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="name" className="text-[10px] font-black uppercase text-muted-foreground">Event Name *</Label>
-            <Input 
-              id="name" 
-              placeholder="e.g. Hamilton at Citizens Bank Opera House" 
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-            />
+            <Input id="name" placeholder="e.g. Hamilton" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="address" className="text-[10px] font-black uppercase text-muted-foreground">Address / Location *</Label>
-            <Input 
-              id="address" 
-              placeholder="e.g. 539 Washington St, Boston, MA 02111" 
-              value={formData.address}
-              onChange={(e) => setFormData({...formData, address: e.target.value})}
-            />
+            <Input id="address" placeholder="e.g. Boston, MA" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="duration" className="text-[10px] font-black uppercase text-muted-foreground">Duration (mins)</Label>
-              <Input 
-                id="duration" 
-                type="number" 
-                value={formData.duration}
-                onChange={(e) => setFormData({...formData, duration: e.target.value})}
-              />
+              <Input id="duration" type="number" value={formData.duration} onChange={(e) => setFormData({...formData, duration: e.target.value})} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="time" className="text-[10px] font-black uppercase text-muted-foreground">Fixed Time (Optional)</Label>
-              <Input 
-                id="time" 
-                placeholder="e.g. 7:30 PM" 
-                value={formData.fixedTime}
-                onChange={(e) => setFormData({...formData, fixedTime: e.target.value})}
-              />
+              <Input id="time" placeholder="e.g. 7:30 PM" value={formData.fixedTime} onChange={(e) => setFormData({...formData, fixedTime: e.target.value})} />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="desc" className="text-[10px] font-black uppercase text-muted-foreground">Notes</Label>
-            <Textarea 
-              id="desc" 
-              placeholder="e.g. Section A, Row 4" 
-              value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
-            />
+            <Textarea id="desc" placeholder="Details..." value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
           </div>
           <DialogFooter>
             <Button type="submit" className="w-full bg-primary font-black uppercase text-xs h-11">Add to Itinerary</Button>

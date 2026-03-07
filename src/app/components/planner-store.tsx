@@ -1,7 +1,8 @@
 "use client"
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { Activity } from '@/app/lib/activities';
+import { addDays, differenceInDays, startOfDay, format } from 'date-fns';
 
 export interface PlannedActivity extends Activity {
   isOptional: boolean;
@@ -11,24 +12,30 @@ export interface PlannedActivity extends Activity {
   travelTimeToNext?: number;
   travelTimeFromPrev?: number;
   fixedStartTime?: string;
+  date?: string;
 }
 
 export interface DayPlan {
   id: string;
   name: string;
+  date: string;
   activities: PlannedActivity[];
+  startHourOverride?: number;
+  endHourOverride?: number;
 }
 
 interface PlannerContextType {
   shortlist: Activity[];
   days: DayPlan[];
   activeDayId: string;
-  tripDuration: number;
+  arrivalDate: Date;
+  departureDate: Date;
   dailyActiveHours: number;
-  startHour: number;
-  setTripDuration: (n: number) => void;
+  defaultStartHour: number;
+  setArrivalDate: (d: Date) => void;
+  setDepartureDate: (d: Date) => void;
   setDailyActiveHours: (n: number) => void;
-  setStartHour: (n: number) => void;
+  setDefaultStartHour: (n: number) => void;
   setActiveDayId: (id: string) => void;
   addToShortlist: (activity: Activity) => void;
   removeFromShortlist: (id: string) => void;
@@ -38,22 +45,50 @@ interface PlannerContextType {
   setDays: (days: DayPlan[]) => void;
   setShortlist: (activities: Activity[]) => void;
   toggleOptional: (activityId: string, dayId: string) => void;
-  addDay: () => void;
-  removeDay: (id: string) => void;
-  addCustomActivity: (activity: PlannedActivity, dayId?: string) => void;
+  addCustomActivity: (activity: PlannedActivity, date?: string) => void;
 }
 
 const PlannerContext = createContext<PlannerContextType | undefined>(undefined);
 
 export function PlannerProvider({ children }: { children: React.ReactNode }) {
   const [shortlist, setShortlist] = useState<Activity[]>([]);
-  const [tripDuration, setTripDuration] = useState(3);
   const [dailyActiveHours, setDailyActiveHours] = useState(8);
-  const [startHour, setStartHour] = useState(9);
-  const [days, setDays] = useState<DayPlan[]>([
-    { id: 'day-1', name: 'Day 1', activities: [] }
-  ]);
-  const [activeDayId, setActiveDayId] = useState<string>('day-1');
+  const [defaultStartHour, setDefaultStartHour] = useState(9);
+  
+  const [arrivalDate, setArrivalDate] = useState<Date>(new Date());
+  const [departureDate, setDepartureDate] = useState<Date>(addDays(new Date(), 2));
+  
+  const [days, setDays] = useState<DayPlan[]>([]);
+  const [activeDayId, setActiveDayId] = useState<string>('');
+
+  // Sync days when arrival/departure changes
+  useEffect(() => {
+    const numDays = differenceInDays(startOfDay(departureDate), startOfDay(arrivalDate)) + 1;
+    const newDays: DayPlan[] = [];
+    
+    for (let i = 0; i < numDays; i++) {
+      const currentDate = addDays(arrivalDate, i);
+      const dateStr = format(currentDate, 'yyyy-MM-dd');
+      
+      // Preserve existing activities if possible
+      const existing = days.find(d => d.date === dateStr);
+      
+      newDays.push({
+        id: existing?.id || `day-${dateStr}`,
+        name: `Day ${i + 1} (${format(currentDate, 'MMM d')})`,
+        date: dateStr,
+        activities: existing?.activities || [],
+        // Handle half-days based on arrival/departure times
+        startHourOverride: i === 0 ? arrivalDate.getHours() : undefined,
+        endHourOverride: i === numDays - 1 ? departureDate.getHours() : undefined
+      });
+    }
+    
+    setDays(newDays);
+    if (newDays.length > 0 && (!activeDayId || !newDays.find(d => d.id === activeDayId))) {
+      setActiveDayId(newDays[0].id);
+    }
+  }, [arrivalDate, departureDate]);
 
   const addToShortlist = useCallback((activity: Activity) => {
     setShortlist(prev => {
@@ -73,13 +108,12 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       }
       return day;
     }));
-    setShortlist(prev => prev.filter(a => a.id !== activity.id));
+    setShortlist(prev => prev.filter(a => a.id === activity.id));
   }, []);
 
-  const addCustomActivity = useCallback((activity: PlannedActivity, dayId?: string) => {
-    const targetId = dayId || activeDayId;
+  const addCustomActivity = useCallback((activity: PlannedActivity, targetDate?: string) => {
     setDays(prev => prev.map(day => {
-      if (day.id === targetId) {
+      if (day.date === targetDate || (!targetDate && day.id === activeDayId)) {
         return { ...day, activities: [...day.activities, { ...activity, isOptional: false }] };
       }
       return day;
@@ -91,10 +125,7 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       if (day.id === dayId) {
         const removed = day.activities.find(a => a.id === activityId);
         if (removed && !removed.isMeal && !activityId.startsWith('custom-')) {
-          setShortlist(s => {
-            if (s.find(a => a.id === removed.id)) return s;
-            return [...s, removed];
-          });
+          setShortlist(s => [...s, removed]);
         }
         return { ...day, activities: day.activities.filter(a => a.id !== activityId) };
       }
@@ -120,46 +151,19 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  const addDay = useCallback(() => {
-    setDays(prev => {
-      const nextNum = prev.length + 1;
-      return [...prev, { id: `day-${Date.now()}`, name: `Day ${nextNum}`, activities: [] }];
-    });
-  }, []);
-
-  const removeDay = useCallback((id: string) => {
-    setDays(prev => {
-      if (prev.length <= 1) return prev;
-      const dayToRemove = prev.find(d => d.id === id);
-      if (dayToRemove) {
-        const nonCustoms = dayToRemove.activities.filter(a => !a.isMeal && !a.id.startsWith('custom-'));
-        setShortlist(s => {
-          const newShortlist = [...s];
-          nonCustoms.forEach(nc => {
-            if (!newShortlist.find(item => item.id === nc.id)) {
-              newShortlist.push(nc);
-            }
-          });
-          return newShortlist;
-        });
-      }
-      const filtered = prev.filter(d => d.id !== id);
-      if (activeDayId === id) setActiveDayId(filtered[0].id);
-      return filtered;
-    });
-  }, [activeDayId]);
-
   return (
     <PlannerContext.Provider value={{ 
       shortlist, 
       days, 
       activeDayId,
-      tripDuration,
+      arrivalDate,
+      departureDate,
       dailyActiveHours,
-      startHour,
-      setTripDuration,
+      defaultStartHour,
+      setArrivalDate,
+      setDepartureDate,
       setDailyActiveHours,
-      setStartHour,
+      setDefaultStartHour,
       setActiveDayId,
       addToShortlist, 
       removeFromShortlist,
@@ -169,8 +173,6 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       setDays,
       setShortlist,
       toggleOptional,
-      addDay,
-      removeDay,
       addCustomActivity
     }}>
       {children}
