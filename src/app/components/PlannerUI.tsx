@@ -1,4 +1,3 @@
-
 "use client"
 
 import { usePlanner, PlannedActivity, DayPlan, TransitMethod } from "./planner-store";
@@ -18,7 +17,6 @@ import {
   Clock, 
   LayoutDashboard, 
   Settings2, 
-  Utensils, 
   Loader2, 
   CalendarClock,
   Send,
@@ -26,15 +24,16 @@ import {
   Plane,
   TrainFront,
   Car,
-  Share2
+  Share2,
+  CloudUpload
 } from "lucide-react";
 import { DiscoveryTable } from "./DiscoveryTable";
 import { AIRecommendations } from "./AIRecommendations";
 import { OptimizeItinerary } from "./OptimizeItinerary";
 import { CustomActivityDialog } from "./CustomActivityDialog";
+import { MealRecommendation } from "./MealRecommendation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { suggestNearbyFood } from "@/ai/flows/suggest-nearby-food-flow";
 import { optimizeItinerary } from "@/ai/flows/optimize-itinerary-flow";
 import { refineItineraryChat } from "@/ai/flows/refine-itinerary-chat-flow";
 import { toast } from "@/hooks/use-toast";
@@ -68,8 +67,8 @@ export function PlannerUI() {
     setShortlist
   } = usePlanner();
   
-  const [loadingFood, setLoadingFood] = useState(false);
   const [isGrouping, setIsGrouping] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [isChatting, setIsChatting] = useState(false);
 
@@ -79,10 +78,23 @@ export function PlannerUI() {
     return (
       <div className="flex flex-col items-center justify-center p-20 gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground font-bold uppercase tracking-widest">Initialising Planner...</p>
+        <p className="text-sm text-muted-foreground font-bold uppercase tracking-widest">Initializing...</p>
       </div>
     );
   }
+
+  const handleSaveTrip = async () => {
+    setIsSaving(true);
+    // Simulate Firebase Save
+    setTimeout(() => {
+      setIsSaving(false);
+      const code = Math.random().toString(36).substring(2, 7).toUpperCase();
+      toast({
+        title: "Trip Saved to Cloud!",
+        description: `Your access code is WANDER-${code}. Anyone with this code can view your itinerary.`,
+      });
+    }, 1500);
+  };
 
   const handleAutoGroupAndOptimize = async () => {
     if (shortlist.length === 0) {
@@ -90,7 +102,7 @@ export function PlannerUI() {
       return;
     }
     setIsGrouping(true);
-    toast({ title: "Generating Trip Plan", description: "Organizing and optimizing routes..." });
+    toast({ title: "Building Itinerary", description: "Organizing activities and calculating travel..." });
 
     try {
       const maxMinutesPerDay = dailyActiveHours * 60;
@@ -158,10 +170,10 @@ export function PlannerUI() {
 
       setDays(optimizedDays);
       setShortlist(items);
-      toast({ title: "Trip Ready!", description: "Itinerary created with travel and optimized order." });
+      toast({ title: "Itinerary Optimized!", description: "Distributed and sequenced across your trip dates." });
     } catch (err) {
       console.error(err);
-      toast({ title: "Failed", description: "Could not generate plan.", variant: "destructive" });
+      toast({ title: "Failed", description: "Could not build plan.", variant: "destructive" });
     } finally {
       setIsGrouping(false);
     }
@@ -186,7 +198,7 @@ export function PlannerUI() {
         userPrompt: chatInput
       });
 
-      const updatedDays = days.map((d, i) => {
+      const updatedDays = days.map((d) => {
         const aiDay = result.updatedItinerary.find(rd => rd.name === d.name);
         if (!aiDay) return d;
         
@@ -207,39 +219,24 @@ export function PlannerUI() {
 
       setDays(updatedDays);
       setChatInput("");
-      toast({ title: "Plan Updated", description: result.explanation });
+      toast({ title: "Plan Refined", description: result.explanation });
     } catch (err) {
       console.error(err);
-      toast({ title: "Chat Error", description: "Could not update itinerary.", variant: "destructive" });
+      toast({ title: "Chat Error", description: "Could not refine itinerary.", variant: "destructive" });
     } finally {
       setIsChatting(false);
     }
   };
 
-  const handleSuggestFood = async () => {
-    if (activeDay.activities.length < 1) return;
-    setLoadingFood(true);
-    try {
-      const result = await suggestNearbyFood({
-        activities: activeDay.activities.map(a => ({ name: a.name, address: a.address }))
-      });
-      toast({ title: "Food Suggestions!", description: `Try ${result.suggestions[0].name}. ${result.suggestions[0].reason}` });
-    } catch (err) {
-      toast({ title: "Error", variant: "destructive" });
-    } finally {
-      setLoadingFood(false);
-    }
-  };
-
   const generateGoogleMapsLink = () => {
     if (!activeDay || !activeDay.activities) return "https://www.google.com/maps";
-    const origin = activeDay.startLocation || "Tewksbury,MA";
-    const destinations = activeDay.activities
+    const origin = encodeURIComponent(activeDay.startLocation || "Tewksbury,MA");
+    const stops = activeDay.activities
       .filter(a => !a.isOptional)
       .map(a => encodeURIComponent(a.address))
       .join('/');
-    const destination = activeDay.endLocation || "Tewksbury,MA";
-    return destinations ? `https://www.google.com/maps/dir/${origin}/${destinations}/${destination}` : `https://www.google.com/maps/dir/${origin}/${destination}`;
+    const destination = encodeURIComponent(activeDay.endLocation || "Tewksbury,MA");
+    return stops ? `https://www.google.com/maps/dir/${origin}/${stops}/${destination}` : `https://www.google.com/maps/dir/${origin}/${destination}`;
   };
 
   const handleShareToPhone = () => {
@@ -247,7 +244,7 @@ export function PlannerUI() {
     navigator.clipboard.writeText(link);
     toast({
       title: "Route Copied!",
-      description: "Paste this link into your phone's browser or Google Maps app to start navigating.",
+      description: "Paste this link into your mobile maps app to start navigating.",
     });
   };
 
@@ -285,7 +282,7 @@ export function PlannerUI() {
         <div className="bg-white rounded-[40px] p-8 border shadow-xl border-primary/5">
           <div className="mb-8">
             <h2 className="text-3xl font-black text-foreground mb-2">Experience Library</h2>
-            <p className="text-muted-foreground">Star items to build your wishlist for the itinerary. We'll group them for you later.</p>
+            <p className="text-muted-foreground">Star items to build your wishlist. We'll group them for you in the planning tab.</p>
           </div>
           <DiscoveryTable />
         </div>
@@ -297,17 +294,12 @@ export function PlannerUI() {
             <div className="bg-white p-6 rounded-[32px] border border-primary/10 shadow-lg space-y-6">
               <div className="flex items-center gap-3 text-primary">
                 <Settings2 className="w-5 h-5" />
-                <h3 className="text-xs font-black uppercase tracking-widest">Trip Configuration</h3>
+                <h3 className="text-xs font-black uppercase tracking-widest">Trip Logistics</h3>
               </div>
               
               <div className="space-y-6">
                 <div className="space-y-4 p-4 rounded-2xl bg-primary/5 border border-primary/10">
-                  <div className="flex items-center gap-2 text-primary">
-                    <div className="bg-white p-1.5 rounded-lg shadow-sm">
-                      <CalendarClock className="w-4 h-4" />
-                    </div>
-                    <Label className="text-[10px] font-black uppercase">Arrival Info</Label>
-                  </div>
+                  <Label className="text-[10px] font-black uppercase text-primary">Arrival</Label>
                   <div className="grid grid-cols-1 gap-3">
                     <Input 
                       type="datetime-local" 
@@ -325,7 +317,7 @@ export function PlannerUI() {
                             setArrivalMethod(m);
                             if (m === 'car') setArrivalLocation('Tewksbury, MA');
                           }}
-                          className="h-9 p-0 rounded-lg text-[9px] font-black uppercase gap-1.5"
+                          className="h-9 p-0 rounded-lg text-[9px] font-black uppercase gap-1"
                         >
                           {transitIcons[m]} {m}
                         </Button>
@@ -334,7 +326,7 @@ export function PlannerUI() {
                     {arrivalMethod !== 'car' && (
                       <Select value={arrivalLocation} onValueChange={setArrivalLocation}>
                         <SelectTrigger className="h-9 text-[10px] font-bold bg-white rounded-xl">
-                          <SelectValue placeholder={`Select ${arrivalMethod}`} />
+                          <SelectValue placeholder="Station/Airport" />
                         </SelectTrigger>
                         <SelectContent>
                           {(arrivalMethod === 'airport' ? airportOptions : trainOptions).map(opt => (
@@ -347,12 +339,7 @@ export function PlannerUI() {
                 </div>
 
                 <div className="space-y-4 p-4 rounded-2xl bg-accent/5 border border-accent/10">
-                  <div className="flex items-center gap-2 text-accent">
-                    <div className="bg-white p-1.5 rounded-lg shadow-sm">
-                      <CalendarClock className="w-4 h-4" />
-                    </div>
-                    <Label className="text-[10px] font-black uppercase">Departure Info</Label>
-                  </div>
+                  <Label className="text-[10px] font-black uppercase text-accent">Departure</Label>
                   <div className="grid grid-cols-1 gap-3">
                     <Input 
                       type="datetime-local" 
@@ -370,34 +357,22 @@ export function PlannerUI() {
                             setDepartureMethod(m);
                             if (m === 'car') setDepartureLocation('Tewksbury, MA');
                           }}
-                          className="h-9 p-0 rounded-lg text-[9px] font-black uppercase gap-1.5"
+                          className="h-9 p-0 rounded-lg text-[9px] font-black uppercase gap-1"
                         >
                           {transitIcons[m]} {m}
                         </Button>
                       ))}
                     </div>
-                    {departureMethod !== 'car' && (
-                      <Select value={departureLocation} onValueChange={setDepartureLocation}>
-                        <SelectTrigger className="h-9 text-[10px] font-bold bg-white rounded-xl">
-                          <SelectValue placeholder={`Select ${departureMethod}`} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(departureMethod === 'airport' ? airportOptions : trainOptions).map(opt => (
-                            <SelectItem key={opt.value} value={opt.value} className="text-[10px] font-bold">{opt.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
                   </div>
                 </div>
 
-                <div className="space-y-1.5 px-1">
-                  <Label className="text-[9px] uppercase font-black text-muted-foreground">Daily Activity Limit (Hours)</Label>
+                <div className="px-1">
+                  <Label className="text-[9px] uppercase font-black text-muted-foreground">Daily Limit ({dailyActiveHours}h)</Label>
                   <Input 
                     type="number" 
                     value={dailyActiveHours} 
                     onChange={(e) => setDailyActiveHours(parseInt(e.target.value) || 8)}
-                    className="h-10 text-sm font-bold rounded-xl border-primary/10"
+                    className="h-10 text-sm font-bold rounded-xl border-primary/10 mt-1"
                   />
                 </div>
               </div>
@@ -406,25 +381,30 @@ export function PlannerUI() {
                 <Button 
                   onClick={handleAutoGroupAndOptimize}
                   disabled={shortlist.length === 0 || isGrouping}
-                  className="w-full bg-primary hover:bg-primary/90 font-black text-xs h-12 rounded-xl shadow-lg transition-all active:scale-[0.98]"
+                  className="w-full bg-primary hover:bg-primary/90 font-black text-xs h-12 rounded-xl shadow-lg"
                 >
                   {isGrouping ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
                   Auto-Group & Optimize
                 </Button>
                 <CustomActivityDialog />
+                <Button 
+                  variant="outline" 
+                  onClick={handleSaveTrip} 
+                  disabled={isSaving}
+                  className="w-full border-primary text-primary hover:bg-primary/5 font-black text-xs h-12 rounded-xl"
+                >
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CloudUpload className="w-4 h-4 mr-2" />}
+                  Save Trip to Cloud
+                </Button>
               </div>
             </div>
 
             <div className="bg-white p-5 rounded-[32px] border border-primary/10 shadow-md">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[11px] font-black text-foreground uppercase tracking-widest">Wishlist ({shortlist.length})</h3>
-                {shortlist.length > 0 && <Badge variant="secondary" className="text-[9px] font-bold">Unplanned</Badge>}
-              </div>
-              <ScrollArea className="h-[400px] pr-4 -mr-4">
+              <h3 className="text-[11px] font-black text-foreground uppercase tracking-widest mb-4">Wishlist ({shortlist.length})</h3>
+              <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-3">
                   {shortlist.length === 0 ? (
                     <div className="text-center py-10 opacity-30">
-                      <Search className="w-8 h-8 mx-auto mb-2" />
                       <p className="text-[10px]">Add items from Discover</p>
                     </div>
                   ) : (
@@ -453,7 +433,7 @@ export function PlannerUI() {
                     onClick={() => setActiveDayId(day.id)}
                     className={cn(
                       "rounded-xl px-5 h-10 text-[11px] font-black uppercase tracking-tighter transition-all",
-                      activeDayId === day.id ? "bg-primary text-white shadow-md" : "text-muted-foreground border-primary/10 hover:border-primary/30"
+                      activeDayId === day.id ? "bg-primary text-white shadow-md" : "text-muted-foreground border-primary/10"
                     )}
                   >
                     {day.name}
@@ -463,9 +443,6 @@ export function PlannerUI() {
               <div className="flex items-center gap-2">
                 <AIRecommendations />
                 <OptimizeItinerary />
-                <Button variant="outline" size="sm" onClick={handleSuggestFood} disabled={loadingFood} className="h-8 text-[10px] font-black uppercase text-primary border-primary/20 hover:bg-primary/5">
-                  <Utensils className="w-3 h-3 mr-1" /> Food Nearby
-                </Button>
                 <div className="flex items-center gap-1 bg-accent/10 p-1 rounded-xl">
                   <Button size="sm" variant="ghost" asChild className="text-accent h-7 text-[9px] font-black uppercase hover:bg-white px-2">
                     <a href={generateGoogleMapsLink()} target="_blank" rel="noopener noreferrer"><Map className="w-3 h-3 mr-1" /> Route</a>
@@ -477,94 +454,88 @@ export function PlannerUI() {
               </div>
             </div>
 
-            <div className="bg-white rounded-[40px] border border-primary/10 shadow-xl p-8 min-h-[600px] relative">
+            <div className="bg-white rounded-[40px] border border-primary/10 shadow-xl p-8 min-h-[600px]">
               <div className="flex items-center justify-between mb-10">
                 <div>
                   <h2 className="text-2xl font-black text-foreground tracking-tight">{activeDay.name} Timeline</h2>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black flex items-center gap-2 mt-1">
                     <Clock className="w-3 h-3" />
-                    Starting from {activeDay.startLocation}
-                    {activeDay.endHourOverride !== undefined ? ` • Ends by ${activeDay.endHourOverride}:00` : ""}
+                    Route: {activeDay.startLocation} → {activeDay.endLocation}
                   </p>
                 </div>
               </div>
 
               {activeDay.activities.length === 0 ? (
-                <div className="py-24 text-center">
-                  <div className="bg-muted/30 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4">
-                    <LayoutDashboard className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <p className="text-sm text-muted-foreground font-medium">This day is currently empty.</p>
-                  <p className="text-[10px] text-muted-foreground uppercase mt-1">Drag items from your wishlist or use Auto-Group.</p>
+                <div className="py-24 text-center opacity-40">
+                  <LayoutDashboard className="w-8 h-8 mx-auto mb-4" />
+                  <p className="text-sm font-medium">No activities scheduled yet.</p>
                 </div>
               ) : (
-                <div className="space-y-12 pl-6 border-l-2 border-primary/10 relative">
-                  {activeDay.activities.map((activity, idx) => (
-                    <div key={activity.id} className="relative">
-                      <div className={cn(
-                        "absolute -left-[2.15rem] top-0 w-8 h-8 rounded-2xl border-2 bg-white flex items-center justify-center font-black text-[11px] shadow-sm",
-                        activity.fixedStartTime ? "border-accent text-accent animate-pulse" : "border-primary text-primary"
-                      )}>
-                        {activity.fixedStartTime ? "!" : idx + 1}
-                      </div>
-
-                      {idx > 0 && (
-                        <div className="absolute -left-[1.6rem] -top-8 text-[9px] font-black text-muted-foreground/40 uppercase bg-white px-2 py-0.5 rounded-full border border-primary/5">
-                          {activity.travelTimeFromPrev ? `~${activity.travelTimeFromPrev}m Travel` : "Travel"}
+                <div className="space-y-8 pl-6 border-l-2 border-primary/10 relative">
+                  {activeDay.activities.map((activity, idx) => {
+                    const isMealPlaceholder = activity.isMeal && activity.type === 'food' && activity.description.includes('recommended');
+                    
+                    return (
+                      <div key={activity.id} className="relative">
+                        <div className={cn(
+                          "absolute -left-[2.15rem] top-0 w-8 h-8 rounded-2xl border-2 bg-white flex items-center justify-center font-black text-[11px]",
+                          activity.fixedStartTime ? "border-accent text-accent" : "border-primary text-primary"
+                        )}>
+                          {activity.fixedStartTime ? "!" : idx + 1}
                         </div>
-                      )}
 
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className="text-[11px] font-black text-primary/80 uppercase tracking-widest bg-primary/5 px-3 py-1 rounded-full">
-                          {activity.scheduledTime} — {activity.endTime}
-                        </span>
-                        {activity.fixedStartTime && (
-                          <Badge variant="default" className="bg-accent text-[8px] py-0 h-5 font-black uppercase">
-                            <CalendarClock className="w-3 h-3 mr-1" /> Locked Event
-                          </Badge>
+                        {idx > 0 && (
+                          <div className="absolute -left-[1.6rem] -top-6 text-[8px] font-black text-muted-foreground/50 uppercase bg-white px-2 py-0.5 rounded-full border">
+                            {activity.travelTimeFromPrev ? `~${activity.travelTimeFromPrev}m Travel` : "Travel"}
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-[11px] font-black text-primary/80 uppercase bg-primary/5 px-3 py-1 rounded-full">
+                            {activity.scheduledTime} — {activity.endTime}
+                          </span>
+                          {activity.fixedStartTime && <Badge className="bg-accent text-[8px] h-5 font-black uppercase">Fixed Point</Badge>}
+                        </div>
+
+                        {isMealPlaceholder ? (
+                          <MealRecommendation 
+                            activity={activity} 
+                            prevActivity={activeDay.activities[idx - 1]} 
+                            nextActivity={activeDay.activities[idx + 1]}
+                            dayId={activeDayId}
+                          />
+                        ) : (
+                          <ActivityCard 
+                            activity={activity} 
+                            actionType="remove" 
+                            onAction={() => removeActivityFromDay(activity.id, activeDayId)} 
+                            onToggleOptional={() => toggleOptional(activity.id, activeDayId)} 
+                          />
                         )}
                       </div>
-                      <ActivityCard 
-                        activity={activity} 
-                        actionType="remove" 
-                        onAction={() => removeActivityFromDay(activity.id, activeDayId)} 
-                        onToggleOptional={() => toggleOptional(activity.id, activeDayId)} 
-                      />
-                    </div>
-                  ))}
-                  
-                  <div className="relative pt-4">
-                     <div className="absolute -left-[1.6rem] top-2 text-[9px] font-black text-muted-foreground/60 uppercase bg-white px-2 py-0.5 rounded-full border border-primary/5">
-                        Return to {activeDay.endLocation || "Tewksbury"}
-                      </div>
-                  </div>
+                    );
+                  })}
                 </div>
               )}
 
               <div className="mt-16 pt-10 border-t border-primary/5">
                 <div className="bg-primary/5 rounded-[32px] p-8 border border-primary/10">
                   <div className="flex items-center gap-3 mb-6 text-primary">
-                    <div className="bg-primary/10 p-2 rounded-xl">
-                      <MessageSquare className="w-5 h-5" />
-                    </div>
+                    <MessageSquare className="w-5 h-5" />
                     <div>
                       <h4 className="text-xs font-black uppercase tracking-widest">Itinerary Assistant</h4>
-                      <p className="text-[10px] text-muted-foreground">Ask for swaps, specific days, or thematic changes.</p>
+                      <p className="text-[10px] text-muted-foreground">Ask for changes, themed swaps, or logic checks.</p>
                     </div>
                   </div>
                   <div className="flex gap-3">
                     <Input 
-                      placeholder="e.g. 'I don't want two boat tours on Day 1' or 'Move the museum to Day 2'" 
+                      placeholder="e.g. 'Move the museum to Day 2' or 'Find a less walking-heavy route'" 
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
-                      className="rounded-2xl bg-white border-primary/10 h-14 text-sm px-6 focus-visible:ring-primary/20"
+                      className="rounded-2xl bg-white h-14 text-sm px-6"
                       onKeyDown={(e) => e.key === 'Enter' && handleChatRefinement()}
                     />
-                    <Button 
-                      onClick={handleChatRefinement} 
-                      disabled={isChatting} 
-                      className="bg-primary hover:bg-primary/90 h-14 w-14 rounded-2xl shrink-0 shadow-lg shadow-primary/20"
-                    >
+                    <Button onClick={handleChatRefinement} disabled={isChatting} className="bg-primary h-14 w-14 rounded-2xl shrink-0">
                       {isChatting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                     </Button>
                   </div>

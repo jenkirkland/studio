@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
@@ -14,6 +13,8 @@ export interface PlannedActivity extends Activity {
   travelTimeFromPrev?: number;
   fixedStartTime?: string;
   date?: string;
+  notes?: string;
+  website?: string;
 }
 
 export interface DayPlan {
@@ -78,7 +79,6 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
   const [days, setDays] = useState<DayPlan[]>([]);
   const [activeDayId, setActiveDayId] = useState<string>('');
 
-  // Sync days when arrival/departure changes
   useEffect(() => {
     const numDays = differenceInDays(startOfDay(departureDate), startOfDay(arrivalDate)) + 1;
     const newDays: DayPlan[] = [];
@@ -89,15 +89,18 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       
       const existing = days.find(d => d.date === dateStr);
       
+      const isStartDay = i === 0;
+      const isEndDay = i === numDays - 1;
+
       newDays.push({
         id: existing?.id || `day-${dateStr}`,
         name: `Day ${i + 1} (${format(currentDate, 'MMM d')})`,
         date: dateStr,
         activities: existing?.activities || [],
-        startHourOverride: i === 0 ? arrivalDate.getHours() : undefined,
-        endHourOverride: i === numDays - 1 ? departureDate.getHours() : undefined,
-        startLocation: i === 0 ? arrivalLocation : 'Tewksbury, MA',
-        endLocation: i === numDays - 1 ? departureLocation : 'Tewksbury, MA'
+        startHourOverride: isStartDay ? arrivalDate.getHours() : undefined,
+        endHourOverride: isEndDay ? departureDate.getHours() : undefined,
+        startLocation: isStartDay ? arrivalLocation : 'Tewksbury, MA',
+        endLocation: isEndDay ? departureLocation : 'Tewksbury, MA'
       });
     }
     

@@ -4,11 +4,12 @@ import { Activity } from "@/app/lib/activities";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, MapPin, Plus, Trash2, CheckCircle2, Circle, Utensils, CalendarClock } from "lucide-react";
+import { Clock, MapPin, Plus, Trash2, CheckCircle2, Utensils, CalendarClock, ExternalLink, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ActivityCardProps {
-  activity: Activity & { isOptional?: boolean; isMeal?: boolean; fixedStartTime?: string };
+  activity: Activity & { isOptional?: boolean; isMeal?: boolean; fixedStartTime?: string; notes?: string; website?: string };
   onAction?: () => void;
   onToggleOptional?: () => void;
   actionType: 'add' | 'remove';
@@ -25,10 +26,7 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
     sports: "bg-red-100 text-red-800 border-red-200",
     culture: "bg-indigo-100 text-indigo-800 border-indigo-200",
     science: "bg-cyan-100 text-cyan-800 border-cyan-200",
-    'sightseeing': "bg-sky-100 text-sky-800 border-sky-200",
-    'boat tour': "bg-cyan-100 text-cyan-800 border-cyan-200",
-    'family': "bg-rose-100 text-rose-800 border-rose-200",
-    'nightlife': "bg-violet-100 text-violet-800 border-violet-200"
+    sightseeing: "bg-sky-100 text-sky-800 border-sky-200"
   };
 
   const isCustom = activity.id.startsWith('custom-');
@@ -43,7 +41,7 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
       <CardHeader className="p-4 pb-2">
         <div className="flex justify-between items-start gap-2">
           <Badge variant="outline" className={cn("capitalize font-bold text-[10px] border px-2 py-0", typeColors[activity.type] || "bg-muted")}>
-            {isCustom ? "Custom Stop" : activity.type}
+            {isCustom ? "Custom" : activity.type}
           </Badge>
           <div className="flex items-center text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
             <Clock className="w-3 h-3 mr-1" />
@@ -64,14 +62,21 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
           <MapPin className="w-3 h-3 mr-1 shrink-0" />
           <span className="truncate">{activity.address}</span>
         </div>
+        
+        {activity.notes && (
+          <div className="mt-3 p-2 bg-accent/10 rounded-xl border border-accent/20 flex gap-2 items-start">
+             <Info className="w-3 h-3 text-accent mt-0.5" />
+             <p className="text-[9px] text-accent font-bold leading-tight uppercase">{activity.notes}</p>
+          </div>
+        )}
       </CardContent>
-      <CardFooter className="p-4 pt-0 flex gap-2">
+      <CardFooter className="p-4 pt-0 flex gap-2 items-center">
         {actionType === 'add' ? (
           <Button 
             onClick={onAction} 
             variant="default" 
             size="sm" 
-            className="w-full bg-primary h-7 text-[11px] font-bold hover:bg-primary/90 shadow-sm"
+            className="w-full bg-primary h-7 text-[11px] font-black uppercase hover:bg-primary/90"
           >
             <Plus className="w-3.5 h-3.5 mr-1" />
             Add to Day
@@ -83,18 +88,24 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
               variant="ghost" 
               size="icon" 
               className="text-destructive h-7 w-7 hover:bg-destructive/10 shrink-0"
-              title="Remove"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
-            {!isCustom && (
+            
+            {activity.website && (
+               <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg border-accent/20 text-accent" asChild>
+                 <a href={activity.website} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-3 h-3" /></a>
+               </Button>
+            )}
+
+            {!isCustom && !activity.isMeal && (
               <Button 
                 onClick={onToggleOptional} 
                 variant="outline" 
                 size="sm" 
                 className={cn(
-                  "flex-1 text-[10px] h-7 font-bold transition-colors",
-                  activity.isOptional ? "bg-accent/10 border-accent text-accent" : "hover:border-accent hover:text-accent"
+                  "flex-1 text-[10px] h-7 font-black uppercase transition-colors",
+                  activity.isOptional ? "bg-accent/10 border-accent text-accent" : "hover:border-accent"
                 )}
               >
                 {activity.isOptional ? "Optional" : "Set Optional"}
