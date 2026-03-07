@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Map, Sparkles, Navigation, Info, Plus, Calendar as CalendarIcon, Search, ListTodo, Trash2, Clock, ChevronRight } from "lucide-react";
+import { Map, Sparkles, Navigation, Info, Plus, Calendar as CalendarIcon, Search, ListTodo, Trash2, Clock, ChevronRight, LayoutDashboard } from "lucide-react";
 import { DiscoveryTable } from "./DiscoveryTable";
 import { AIRecommendations } from "./AIRecommendations";
 import { OptimizeItinerary } from "./OptimizeItinerary";
@@ -46,52 +46,52 @@ export function PlannerUI() {
 
   return (
     <Tabs defaultValue="discover" className="w-full">
-      <div className="flex items-center justify-center mb-10">
-        <TabsList className="grid w-full max-w-lg grid-cols-2 bg-muted/40 p-1 border shadow-sm rounded-full">
-          <TabsTrigger value="discover" className="flex items-center gap-2 rounded-full py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">
-            <Search className="h-4 w-4" /> 1. Discover Activities
+      <div className="flex items-center justify-center mb-8">
+        <TabsList className="grid w-full max-w-md grid-cols-2 bg-muted p-1 border shadow-sm rounded-xl">
+          <TabsTrigger value="discover" className="flex items-center gap-2 rounded-lg py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">
+            <Search className="h-4 w-4" /> Discover
           </TabsTrigger>
-          <TabsTrigger value="plan" className="flex items-center gap-2 rounded-full py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-md">
-            <ListTodo className="h-4 w-4" /> 2. Build Your Plan
+          <TabsTrigger value="plan" className="flex items-center gap-2 rounded-lg py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">
+            <ListTodo className="h-4 w-4" /> Plan My Trip
           </TabsTrigger>
         </TabsList>
       </div>
 
-      <TabsContent value="discover" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <div className="bg-white rounded-3xl p-8 border shadow-xl">
-          <div className="mb-8">
-            <h2 className="text-3xl font-headline font-black text-foreground tracking-tight mb-2">The Big List</h2>
-            <p className="text-muted-foreground text-lg">Browse all 50+ curated activities. Star your favorites to add them to your planning shortlist.</p>
+      <TabsContent value="discover" className="animate-in fade-in duration-300">
+        <div className="bg-white rounded-2xl p-6 border shadow-lg">
+          <div className="mb-6">
+            <h2 className="text-2xl font-black text-foreground mb-1">Activity Library</h2>
+            <p className="text-muted-foreground text-sm">Explore curated experiences. Star items to add them to your planning shortlist.</p>
           </div>
           <DiscoveryTable />
         </div>
       </TabsContent>
 
-      <TabsContent value="plan" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <div className="flex flex-col xl:flex-row gap-8">
-          {/* Shortlist Sidebar */}
-          <div className="w-full xl:w-[380px] flex flex-col gap-6">
-            <div className="flex items-center justify-between px-2">
-              <div className="flex flex-col">
-                <h2 className="text-2xl font-headline font-black text-foreground">Interested</h2>
-                <p className="text-xs text-muted-foreground">Your starred activities</p>
+      <TabsContent value="plan" className="animate-in fade-in duration-300">
+        <div className="flex flex-col xl:flex-row gap-6">
+          {/* Sidebar: Shortlist */}
+          <div className="w-full xl:w-80 flex flex-col gap-4">
+            <div className="flex items-center justify-between px-1">
+              <div>
+                <h3 className="text-lg font-black text-foreground">Interested</h3>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Your Shortlist</p>
               </div>
-              <Badge variant="secondary" className="px-3 py-1 font-bold">
+              <Badge variant="secondary" className="px-2 py-0.5 text-[10px] font-bold">
                 {shortlist.length} Items
               </Badge>
             </div>
             
-            <ScrollArea className="h-[calc(100vh-22rem)] rounded-2xl border bg-white/40 backdrop-blur-md p-4 shadow-inner">
+            <ScrollArea className="h-[600px] rounded-2xl border bg-secondary/20 p-4">
               {shortlist.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center p-8 opacity-60">
-                  <div className="bg-primary/5 p-4 rounded-full mb-4">
-                    <Search className="w-8 h-8 text-primary/40" />
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center p-6 opacity-60">
+                  <div className="bg-white p-3 rounded-full mb-3 shadow-sm border">
+                    <Search className="w-6 h-6 text-primary/40" />
                   </div>
-                  <p className="font-bold text-lg mb-1">Your shortlist is empty</p>
-                  <p className="text-sm">Go to 'Discover' and star activities you'd like to include in your trip.</p>
+                  <p className="font-bold text-sm mb-1">Nothing here yet</p>
+                  <p className="text-[11px]">Go to 'Discover' and star activities to add them to this list.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-4">
                   {shortlist.map(activity => (
                     <ActivityCard 
                       key={activity.id} 
@@ -105,118 +105,112 @@ export function PlannerUI() {
             </ScrollArea>
           </div>
 
-          {/* Day Planning Area */}
+          {/* Main Planning Area */}
           <div className="flex-1 flex flex-col gap-6">
-            <div className="flex flex-col gap-6 bg-white p-6 rounded-3xl border shadow-lg">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide max-w-full">
-                  {days.map((day) => (
-                    <div key={day.id} className="flex items-center group relative">
-                      <Button
-                        variant={activeDayId === day.id ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setActiveDayId(day.id)}
-                        className={cn(
-                          "rounded-full px-6 h-10 text-xs font-black transition-all shadow-sm",
-                          activeDayId === day.id ? "bg-primary text-white scale-105" : "bg-white text-muted-foreground hover:border-primary/50"
-                        )}
-                      >
-                        <CalendarIcon className="w-3.5 h-3.5 mr-2" />
-                        {day.name}
-                      </Button>
-                      {days.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 bg-white border border-destructive/20 shadow-md text-destructive hover:bg-destructive hover:text-white rounded-full"
-                          onClick={() => removeDay(day.id)}
-                        >
-                          <Trash2 className="h-3.5 h-3.5" />
-                        </Button>
+            {/* Toolbar */}
+            <div className="bg-white p-4 rounded-2xl border shadow-sm flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide max-w-full">
+                {days.map((day) => (
+                  <div key={day.id} className="flex items-center group relative">
+                    <Button
+                      variant={activeDayId === day.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setActiveDayId(day.id)}
+                      className={cn(
+                        "rounded-full px-5 h-9 text-xs font-bold transition-all shadow-sm",
+                        activeDayId === day.id ? "bg-primary text-white" : "bg-white text-muted-foreground hover:border-primary/50"
                       )}
-                    </div>
-                  ))}
-                  <Button variant="outline" size="sm" onClick={addDay} className="h-10 w-10 rounded-full p-0 border-dashed border-primary/30 hover:border-primary text-primary transition-all hover:scale-110">
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                <div className="flex items-center gap-2 bg-muted/30 p-1.5 rounded-xl border">
-                  <OptimizeItinerary />
-                  <div className="w-px h-6 bg-border mx-1" />
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setShowAI(!showAI)}
-                    className={cn(
-                      "h-8 text-xs font-bold transition-all", 
-                      showAI ? "bg-primary text-white border-primary shadow-sm" : "border-primary/30 text-primary hover:bg-primary/5"
+                    >
+                      {day.name}
+                    </Button>
+                    {days.length > 1 && (
+                      <button
+                        className="h-4 w-4 absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 bg-white border border-destructive/20 shadow-sm text-destructive hover:bg-destructive hover:text-white rounded-full flex items-center justify-center transition-all"
+                        onClick={() => removeDay(day.id)}
+                      >
+                        <Trash2 className="h-2.5 w-2.5" />
+                      </button>
                     )}
-                  >
-                    <Sparkles className="w-3.5 h-3.5 mr-2" />
-                    AI Assistant
-                  </Button>
-                  <Button 
-                    size="sm"
-                    asChild
-                    className="bg-accent hover:bg-accent/90 text-white h-8 text-xs font-black shadow-sm"
-                  >
-                    <a href={generateGoogleMapsLink()} target="_blank" rel="noopener noreferrer">
-                      <Map className="w-3.5 h-3.5 mr-2" />
-                      Map Day
-                    </a>
-                  </Button>
-                </div>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" onClick={addDay} className="h-9 w-9 rounded-full p-0 border-dashed border-primary/30 text-primary">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-2 bg-muted/30 p-1.5 rounded-xl border">
+                <OptimizeItinerary />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowAI(!showAI)}
+                  className={cn(
+                    "h-8 text-xs font-bold transition-all", 
+                    showAI ? "bg-primary text-white border-primary" : "border-primary/30 text-primary hover:bg-primary/5"
+                  )}
+                >
+                  <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                  Smart Suggestions
+                </Button>
+                <Button 
+                  size="sm"
+                  asChild
+                  className="bg-accent hover:bg-accent/90 text-white h-8 text-xs font-bold shadow-sm"
+                >
+                  <a href={generateGoogleMapsLink()} target="_blank" rel="noopener noreferrer">
+                    <Map className="w-3.5 h-3.5 mr-1.5" />
+                    View Map
+                  </a>
+                </Button>
               </div>
             </div>
 
             {showAI && (
-              <div className="animate-in slide-in-from-top-4 duration-500">
+              <div className="animate-in slide-in-from-top-2 duration-300">
                 <AIRecommendations />
               </div>
             )}
 
-            <div className="flex-1 bg-white rounded-[32px] border border-primary/10 shadow-2xl p-8 min-h-[600px] flex flex-col relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-1 h-full bg-primary/10" />
+            {/* Itinerary Column */}
+            <div className="bg-white rounded-3xl border shadow-xl p-6 min-h-[600px] flex flex-col relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/10" />
               
+              <div className="flex items-center gap-3 mb-8 pl-4">
+                <LayoutDashboard className="w-6 h-6 text-primary" />
+                <h2 className="text-2xl font-black text-foreground">{activeDay.name} Itinerary</h2>
+              </div>
+
               {activeDay.activities.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
-                  <div className="w-32 h-32 bg-primary/5 rounded-full flex items-center justify-center mb-8 border border-primary/10 shadow-inner">
-                    <Navigation className="w-14 h-14 text-primary opacity-20" />
+                  <div className="w-24 h-24 bg-primary/5 rounded-full flex items-center justify-center mb-6 border border-primary/10">
+                    <Navigation className="w-10 h-10 text-primary opacity-20" />
                   </div>
-                  <h3 className="font-headline font-black text-3xl text-foreground mb-4">Your {activeDay.name} Itinerary</h3>
-                  <p className="max-w-md text-muted-foreground leading-relaxed">
-                    Start adding activities from your starred list on the left. Once added, you can toggle them as "Optional" or use the <strong>AI Assistant</strong> to find perfect matches.
+                  <h3 className="font-bold text-xl text-foreground mb-3">Your Itinerary is Empty</h3>
+                  <p className="max-w-xs text-xs text-muted-foreground leading-relaxed">
+                    Start adding activities from your starred list on the left. You can then toggle them as optional or use the AI to optimize your day.
                   </p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-8 border-primary/20 text-primary group"
-                    onClick={() => document.querySelector('[value="discover"]')?.dispatchEvent(new MouseEvent('click', {bubbles: true}))}
-                  >
-                    Go discover activities <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                  </Button>
                 </div>
               ) : (
                 <>
-                  <ScrollArea className="flex-1 pr-6">
-                    <div className="flex flex-col gap-8 pb-8">
+                  <ScrollArea className="flex-1 pr-4">
+                    <div className="space-y-8 pb-8">
                       {activeDay.activities.map((activity, index) => (
-                        <div key={activity.id} className="relative group pl-12">
+                        <div key={activity.id} className="relative group pl-10">
                           {/* Progress Line */}
-                          {index < activeDay.activities.length - 1 && !activity.isOptional && (
-                            <div className="absolute top-10 left-[1.125rem] w-0.5 h-[calc(100%+2rem)] bg-gradient-to-b from-primary/30 to-primary/5 z-0" />
+                          {index < activeDay.activities.length - 1 && (
+                            <div className="absolute top-8 left-[1.125rem] w-0.5 h-[calc(100%+2rem)] bg-gradient-to-b from-primary/30 to-transparent" />
                           )}
                           
                           {/* Timeline Marker */}
-                          <div className="absolute left-0 top-1 flex flex-col items-center">
+                          <div className="absolute left-0 top-0 flex flex-col items-center">
                             <div className={cn(
-                              "w-9 h-9 rounded-full border-4 flex items-center justify-center font-black text-sm bg-white z-10 shadow-md transition-all group-hover:scale-110",
+                              "w-9 h-9 rounded-full border-2 flex items-center justify-center font-black text-xs bg-white shadow-sm z-10 transition-transform group-hover:scale-110",
                               activity.isMeal ? "border-accent text-accent" : "border-primary text-primary"
                             )}>
                               {activity.scheduledTime ? <Clock className="w-4 h-4" /> : index + 1}
                             </div>
                             {activity.scheduledTime && (
-                              <span className="text-[10px] font-black text-primary mt-2 bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10 whitespace-nowrap uppercase tracking-tighter">
+                              <span className="text-[9px] font-bold text-primary mt-2 bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10 whitespace-nowrap uppercase">
                                 {activity.scheduledTime}
                               </span>
                             )}
@@ -235,37 +229,25 @@ export function PlannerUI() {
                     </div>
                   </ScrollArea>
 
-                  {/* Day Footer Stats */}
-                  <div className="mt-8 pt-8 border-t border-primary/5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <div className="bg-primary/[0.03] rounded-2xl p-5 border border-primary/10 hover:bg-primary/[0.05] transition-colors">
-                        <div className="flex items-center gap-2 mb-2 text-primary/60">
-                          <Clock className="w-4 h-4" />
-                          <p className="text-[10px] font-black uppercase tracking-widest">Active Time</p>
-                        </div>
-                        <p className="text-4xl font-headline font-black text-primary">
-                          {Math.floor(totalDuration / 60)}h <span className="text-xl font-bold">{totalDuration % 60}m</span>
+                  {/* Summary Footer */}
+                  <div className="mt-6 pt-6 border-t flex flex-wrap gap-6 items-center justify-between">
+                    <div className="flex gap-8">
+                      <div>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Active Time</p>
+                        <p className="text-2xl font-black text-primary">
+                          {Math.floor(totalDuration / 60)}h <span className="text-sm font-bold">{totalDuration % 60}m</span>
                         </p>
                       </div>
-
-                      <div className="bg-accent/[0.03] rounded-2xl p-5 border border-accent/10 hover:bg-accent/[0.05] transition-colors">
-                        <div className="flex items-center gap-2 mb-2 text-accent/60">
-                          <Navigation className="w-4 h-4" />
-                          <p className="text-[10px] font-black uppercase tracking-widest">Est. Travel</p>
-                        </div>
-                        <p className="text-4xl font-headline font-black text-accent">
-                          ~ {totalDriveTime} <span className="text-xl font-bold">min</span>
+                      <div>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Travel Estimate</p>
+                        <p className="text-2xl font-black text-accent">
+                          ~{totalDriveTime} <span className="text-sm font-bold">min</span>
                         </p>
                       </div>
-
-                      <div className="sm:col-span-2 lg:col-span-1 bg-muted/20 rounded-2xl p-5 border border-border flex flex-col justify-center">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Info className="w-4 h-4 text-primary" />
-                          <p className="text-xs font-medium leading-relaxed">
-                            Click <strong>"Optimize Order"</strong> to automatically arrange your stops and add meal breaks.
-                          </p>
-                        </div>
-                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground bg-muted/30 px-4 py-2 rounded-xl border">
+                      <Info className="w-3.5 h-3.5 text-primary" />
+                      <span>Optimizing adds meal breaks and reorders stops.</span>
                     </div>
                   </div>
                 </>

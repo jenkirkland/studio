@@ -33,7 +33,7 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
 
   return (
     <Card className={cn(
-      "overflow-hidden transition-all duration-300 border hover:shadow-lg",
+      "overflow-hidden transition-all duration-300 border hover:shadow-md",
       activity.isOptional ? "opacity-60 grayscale-[0.3] border-dashed bg-muted/20" : "border-border shadow-sm bg-white",
       activity.isMeal ? "bg-accent/5 border-accent/20" : ""
     )}>
@@ -47,13 +47,13 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
             {activity.durationMinutes} min
           </div>
         </div>
-        <CardTitle className="text-base mt-2 leading-tight font-headline font-bold text-foreground line-clamp-1 flex items-center gap-2">
-          {activity.isMeal && <Utensils className="w-4 h-4 text-accent" />}
+        <CardTitle className="text-sm mt-2 leading-tight font-headline font-bold text-foreground line-clamp-1 flex items-center gap-2">
+          {activity.isMeal && <Utensils className="w-3.5 h-3.5 text-accent" />}
           {activity.name}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-4 pt-1">
-        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-3">
+        <p className="text-[11px] text-muted-foreground line-clamp-2 leading-normal mb-2">
           {activity.description}
         </p>
         <div className="flex items-center text-[10px] text-primary/80 font-medium">
@@ -67,9 +67,9 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
             onClick={onAction} 
             variant="default" 
             size="sm" 
-            className="w-full bg-primary h-8 text-xs font-bold hover:bg-primary/90 shadow-sm transition-transform active:scale-95"
+            className="w-full bg-primary h-7 text-[11px] font-bold hover:bg-primary/90 shadow-sm"
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-3.5 h-3.5 mr-1" />
             Add to Day
           </Button>
         ) : (
@@ -78,25 +78,21 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
               onClick={onAction} 
               variant="ghost" 
               size="icon" 
-              className="text-destructive h-8 w-8 hover:bg-destructive/10 shrink-0"
-              title="Remove from plan"
+              className="text-destructive h-7 w-7 hover:bg-destructive/10 shrink-0"
+              title="Remove"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </Button>
             <Button 
               onClick={onToggleOptional} 
               variant="outline" 
               size="sm" 
               className={cn(
-                "flex-1 text-[10px] h-8 font-bold transition-colors",
-                activity.isOptional ? "bg-accent/10 border-accent text-accent hover:bg-accent/20" : "hover:border-accent hover:text-accent"
+                "flex-1 text-[10px] h-7 font-bold transition-colors",
+                activity.isOptional ? "bg-accent/10 border-accent text-accent" : "hover:border-accent hover:text-accent"
               )}
             >
-              {activity.isOptional ? (
-                <><CheckCircle2 className="w-3 h-3 mr-1" /> Optional</>
-              ) : (
-                <><Circle className="w-3 h-3 mr-1" /> Set Optional</>
-              )}
+              {activity.isOptional ? "Optional" : "Set Optional"}
             </Button>
           </>
         )}

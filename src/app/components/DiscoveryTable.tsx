@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Star, StarOff, CheckCircle2 } from "lucide-react";
+import { Search, Star, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function DiscoveryTable() {
@@ -52,22 +52,21 @@ export function DiscoveryTable() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input 
           placeholder="Search activities, locations, or types..." 
-          className="pl-10"
+          className="pl-10 h-11 border-primary/20 focus-visible:ring-primary/30"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
 
-      <div className="rounded-md border bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
         <Table>
-          <TableHeader className="bg-muted/50">
+          <TableHeader className="bg-muted/30">
             <TableRow>
               <TableHead className="w-[50px]"></TableHead>
-              <TableHead className="font-bold">Activity</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead className="hidden md:table-cell">Brief Summary</TableHead>
-              <TableHead className="text-right">Duration</TableHead>
-              <TableHead className="w-[100px]"></TableHead>
+              <TableHead className="font-black text-foreground">Experience</TableHead>
+              <TableHead className="font-black text-foreground">Type</TableHead>
+              <TableHead className="hidden md:table-cell font-black text-foreground">Brief Summary</TableHead>
+              <TableHead className="text-right font-black text-foreground">Duration</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -76,44 +75,34 @@ export function DiscoveryTable() {
               const planned = isPlanned(activity.id);
 
               return (
-                <TableRow key={activity.id} className={cn(planned && "bg-muted/30 opacity-70")}>
+                <TableRow key={activity.id} className={cn(planned && "bg-muted/20 opacity-60")}>
                   <TableCell>
                     {planned ? (
-                      <CheckCircle2 className="h-5 w-5 text-primary" />
+                      <div className="flex items-center justify-center">
+                        <CheckCircle2 className="h-5 w-5 text-primary" />
+                      </div>
                     ) : (
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => short ? removeFromShortlist(activity.id) : addToShortlist(activity)}
-                        className={cn(short ? "text-accent" : "text-muted-foreground")}
+                        className={cn("h-8 w-8 transition-all", short ? "text-accent" : "text-muted-foreground hover:text-primary")}
                       >
-                        <Star className={cn("h-5 w-5", short && "fill-current")} />
+                        <Star className={cn("h-4 w-4", short && "fill-current")} />
                       </Button>
                     )}
                   </TableCell>
-                  <TableCell className="font-medium">{activity.name}</TableCell>
+                  <TableCell className="font-bold text-sm">{activity.name}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={cn("capitalize text-[10px]", typeColors[activity.type as keyof typeof typeColors] || "bg-muted")}>
+                    <Badge variant="outline" className={cn("capitalize text-[9px] font-bold", typeColors[activity.type as keyof typeof typeColors] || "bg-muted")}>
                       {activity.type}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground hidden md:table-cell max-w-md">
+                  <TableCell className="text-xs text-muted-foreground hidden md:table-cell max-w-md">
                     <p className="line-clamp-1">{activity.description}</p>
                   </TableCell>
-                  <TableCell className="text-right text-xs font-mono">
+                  <TableCell className="text-right text-xs font-mono font-bold text-primary/70">
                     {activity.durationMinutes}m
-                  </TableCell>
-                  <TableCell>
-                    {!planned && !short && (
-                       <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="text-xs h-8"
-                        onClick={() => addToShortlist(activity)}
-                       >
-                         Shortlist
-                       </Button>
-                    )}
                   </TableCell>
                 </TableRow>
               );
