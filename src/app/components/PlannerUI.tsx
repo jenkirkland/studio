@@ -1,12 +1,13 @@
 "use client"
 
-import { usePlanner, PlannedActivity, TransitMethod } from "./planner-store";
+import { usePlanner, PlannedActivity, TransitMethod, ActivityPace, PACE_MULTIPLIERS } from "./planner-store";
 import { ActivityCard } from "./ActivityCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import {
   Map,
   Search,
@@ -18,7 +19,8 @@ import {
   Wand2,
   Plane,
   TrainFront,
-  Car
+  Car,
+  Copy
 } from "lucide-react";
 import { DiscoveryTable } from "./DiscoveryTable";
 import { AIRecommendations } from "./AIRecommendations";
@@ -51,7 +53,9 @@ export function PlannerUI() {
     setArrivalLocation,
     dailyActiveHours,
     setDays,
-    setShortlist
+    setShortlist,
+    activityPace,
+    setActivityPace
   } = usePlanner();
 
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -72,7 +76,7 @@ export function PlannerUI() {
           activities: (d.activities || []).map(a => ({
             id: a.id,
             name: a.name,
-            durationMinutes: a.durationMinutes,
+            durationMinutes: Math.round((a.durationMinutes || 60) * PACE_MULTIPLIERS[activityPace]),
             type: a.type,
             address: a.address,
             fixedStartTime: a.fixedStartTime
@@ -85,7 +89,7 @@ export function PlannerUI() {
         wishlist: shortlist.map(a => ({
           id: a.id,
           name: a.name,
-          durationMinutes: a.durationMinutes,
+          durationMinutes: Math.round((a.durationMinutes || 60) * PACE_MULTIPLIERS[activityPace]),
           type: a.type,
           address: a.address
         })),
@@ -118,7 +122,7 @@ export function PlannerUI() {
             name: item.name,
             description: item.reason || existing?.description || "Recommended stop.",
             type: item.type === 'meal' ? 'food' : (existing?.type || 'sightseeing'),
-            durationMinutes: item.durationMinutes,
+            durationMinutes: item.durationMinutes ? Math.round(item.durationMinutes / PACE_MULTIPLIERS[activityPace]) : (existing?.durationMinutes || 60),
             address: existing?.address || item.name,
             scheduledTime: item.startTime,
             endTime: item.endTime,
@@ -134,13 +138,26 @@ export function PlannerUI() {
       });
 
       // Pass 2: Post-process every day through the Google Maps routing engine
+      // First, temporarily simulate the scaled timeline locally because the Google Routes interceptor
+      // needs the actual physical time windows
       const fullyRoutedDays = await Promise.all(updatedDays.map(async (d) => {
         const startLoc = d.startLocation || "Tewksbury, MA";
         const startH = d.startHourOverride || 9;
 
+        // Temporarily scale before routing
+        const scaledActivities = d.activities.map(a => ({
+          ...a,
+          durationMinutes: Math.round((a.durationMinutes || 60) * PACE_MULTIPLIERS[activityPace])
+        }));
+
         try {
-          const routedActivities = await recalculateTimelineWithTraffic(d.activities, startLoc, d.date, startH);
-          return { ...d, activities: routedActivities };
+          const routedActivities = await recalculateTimelineWithTraffic(scaledActivities, startLoc, d.date, startH);
+          // Restore unscaled duration for the store
+          const unscaledRouted = routedActivities.map(a => ({
+            ...a,
+            durationMinutes: Math.round((a.durationMinutes || 60) / PACE_MULTIPLIERS[activityPace])
+          }));
+          return { ...d, activities: unscaledRouted };
         } catch (e) {
           console.error(`Routing failed for day ${d.id}, falling back to AI times:`, e);
           return d;
@@ -183,9 +200,17 @@ export function PlannerUI() {
   };
 
   const handleShareToPhone = () => {
-    const link = generateGoogleMapsLink();
+    const link = generateSharedLink();
     navigator.clipboard.writeText(link);
-    toast({ title: "Route Copied!", description: "Paste into your maps app." });
+    toast({ title: "Link Copied!", description: "Paste into your messages or notes app." });
+  };
+
+  const generateSharedLink = () => {
+    if (typeof window === 'undefined' || !activeDay) return "http://localhost:9002";
+    const origin = window.location.origin;
+    // Compress the timeline payload for the URL using native base64
+    const compressedPayload = btoa(unescape(encodeURIComponent(JSON.stringify(activeDay))));
+    return `${origin}/shared?plan=${compressedPayload}`;
   };
 
   const transitIcons = {
@@ -260,6 +285,28 @@ export function PlannerUI() {
                     className="h-10 text-xs font-bold rounded-xl"
                   />
                 </div>
+
+                <div className="space-y-4 p-4 rounded-2xl bg-muted/20 border border-muted-foreground/10">
+                  <Label className="text-[10px] font-black uppercase text-foreground">Activity Pace</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['breeze', 'normal', 'linger'] as ActivityPace[]).map((p) => (
+                      <Button
+                        key={p}
+                        variant={activityPace === p ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setActivityPace(p)}
+                        className="h-9 p-0 rounded-lg text-[9px] font-black uppercase"
+                      >
+                        {p}
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-[9px] text-muted-foreground leading-tight px-1">
+                    {activityPace === 'breeze' && "Visits are 25% shorter. Fit in more stops."}
+                    {activityPace === 'normal' && "Standard recommended activity durations."}
+                    {activityPace === 'linger' && "Visits are 50% longer. Take it slow."}
+                  </p>
+                </div>
               </div>
 
               <div className="pt-2 space-y-3">
@@ -318,9 +365,39 @@ export function PlannerUI() {
                 <Button size="sm" variant="ghost" asChild className="text-accent h-7 text-[9px] font-black uppercase px-2">
                   <a href={generateGoogleMapsLink()} target="_blank" rel="noopener noreferrer"><Map className="w-3 h-3 mr-1" /> Route</a>
                 </Button>
-                <Button size="sm" variant="ghost" onClick={handleShareToPhone} className="text-accent h-7 text-[9px] font-black uppercase px-2">
-                  <Share2 className="w-3 h-3 mr-1" /> Send to Phone
-                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="ghost" className="text-accent h-7 text-[9px] font-black uppercase px-2">
+                      <Share2 className="w-3 h-3 mr-1" /> Send to Phone
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md rounded-[32px] border shadow-2xl">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl font-black text-foreground">Send to Phone</DialogTitle>
+                      <DialogDescription className="text-xs text-muted-foreground">
+                        Scan this QR code with your phone's camera to open your interactive itinerary directly in Google Maps.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex flex-col items-center justify-center space-y-6 py-4">
+                      <div className="bg-white p-4 rounded-3xl border-2 border-dashed border-primary/20 shadow-sm relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-primary/5 transition-opacity opacity-0 group-hover:opacity-100" />
+                        {activeDay && (
+                          <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(generateSharedLink())}`}
+                            alt="Itinerary QR Code"
+                            className="w-52 h-52 relative z-10"
+                          />
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-2 w-full bg-muted/20 p-2 rounded-2xl border">
+                        <Input readOnly value={generateSharedLink()} className="rounded-xl flex-1 text-xs border-0 bg-transparent focus-visible:ring-0 px-2 text-muted-foreground" />
+                        <Button size="icon" onClick={handleShareToPhone} className="rounded-xl shrink-0 bg-white text-primary border shadow-sm hover:bg-muted text-xs font-bold gap-2 w-auto px-4">
+                          <Copy className="w-3 h-3" /> Copy
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
 
