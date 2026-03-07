@@ -5,6 +5,24 @@
       "description": "Scenic view of the Merrimack River at sunset",
       "imageUrl": "https://picsum.photos/seed/merrimack/1200/600",
       "imageHint": "river landscape"
+    },
+    {
+      "id": "activity-farm",
+      "description": "Farm animals in a peaceful setting",
+      "imageUrl": "https://picsum.photos/seed/farm/600/400",
+      "imageHint": "farm animals"
+    },
+    {
+      "id": "activity-art",
+      "description": "Artist studio with colorful paintings",
+      "imageUrl": "https://picsum.photos/seed/art/600/400",
+      "imageHint": "art studio"
+    },
+    {
+      "id": "activity-food",
+      "description": "Delicious local artisanal food",
+      "imageUrl": "https://picsum.photos/seed/food/600/400",
+      "imageHint": "delicious food"
     }
   ]
 }
