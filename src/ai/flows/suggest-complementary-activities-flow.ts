@@ -6,7 +6,6 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-// Schemas (internal)
 const ActivityDetailsSchema = z.object({
   name: z.string().describe('The name of the activity.'),
   description: z.string().describe('A brief description of the activity.'),
@@ -31,19 +30,16 @@ const SuggestComplementaryActivitiesOutputSchema = z.object({
   totalSuggestedDurationMinutes: z.number(),
 });
 
-// Types (exported)
 export type SuggestComplementaryActivitiesInput = z.infer<typeof SuggestComplementaryActivitiesInputSchema>;
 export type SuggestComplementaryActivitiesOutput = z.infer<typeof SuggestComplementaryActivitiesOutputSchema>;
 
-// Exported wrapper function
 export async function suggestComplementaryActivities(input: SuggestComplementaryActivitiesInput): Promise<SuggestComplementaryActivitiesOutput> {
   return suggestComplementaryActivitiesFlow(input);
 }
 
-// Prompt Definition
 const prompt = ai.definePrompt({
   name: 'suggestComplementaryActivitiesPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: 'googleai/gemini-1.5-pro',
   input: {schema: SuggestComplementaryActivitiesInputSchema},
   output: {schema: SuggestComplementaryActivitiesOutputSchema},
   prompt: `You are an AI assistant designed to help users plan their day trip starting in Tewksbury, MA.
@@ -67,7 +63,6 @@ Choose 1-3 activities from this list that complement the current plan without ex
 Provide a brief 'reason' for each suggestion.`,
 });
 
-// Flow Definition
 const suggestComplementaryActivitiesFlow = ai.defineFlow(
   {
     name: 'suggestComplementaryActivitiesFlow',

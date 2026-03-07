@@ -41,7 +41,7 @@ export async function suggestNearbyFood(input: SuggestNearbyFoodInput): Promise<
 
 const prompt = ai.definePrompt({
   name: 'suggestNearbyFoodPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: 'googleai/gemini-1.5-pro',
   input: { schema: SuggestNearbyFoodInputSchema },
   output: { schema: SuggestNearbyFoodOutputSchema },
   prompt: `You are an expert local food guide for the Boston and Merrimack Valley area.

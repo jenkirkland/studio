@@ -1,7 +1,6 @@
 'use server';
 /**
  * @fileOverview A consolidated Genkit flow that optimizes an entire multi-day trip.
- * It distributes wishlist items across days and sequences them based on logistics.
  */
 
 import {ai} from '@/ai/genkit';
@@ -65,7 +64,7 @@ export async function optimizeFullTrip(input: OptimizeFullTripInput): Promise<Op
 
 const optimizePrompt = ai.definePrompt({
   name: 'optimizeFullTripPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: 'googleai/gemini-1.5-pro',
   input: { schema: OptimizeFullTripInputSchema },
   output: { schema: OptimizeFullTripOutputSchema },
   prompt: `You are an expert travel logistics planner for the Boston/Merrimack Valley area.

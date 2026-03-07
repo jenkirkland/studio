@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview A Genkit flow that "searches" for event/location details to auto-populate the custom activity form.
+ * @fileOverview A Genkit flow that searches for event details to auto-populate the custom activity form.
  */
 
 import {ai} from '@/ai/genkit';
@@ -31,7 +31,7 @@ export async function searchCustomEvent(input: SearchCustomEventInput): Promise<
 
 const prompt = ai.definePrompt({
   name: 'searchCustomEventPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: 'googleai/gemini-1.5-pro',
   input: { schema: SearchCustomEventInputSchema },
   output: { schema: SearchCustomEventOutputSchema },
   prompt: `You are a travel assistant. A user is looking for details about an event or place: "{{{query}}}".
