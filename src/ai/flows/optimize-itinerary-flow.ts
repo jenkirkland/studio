@@ -1,6 +1,7 @@
+
 'use server';
 /**
- * @fileOverview A Genkit flow that optimizes activities for a day, respecting arrival/departure times.
+ * @fileOverview A Genkit flow that optimizes activities for a day, respecting arrival/departure times and locations.
  */
 
 import {ai} from '@/ai/genkit';
@@ -19,6 +20,8 @@ const OptimizeInputSchema = z.object({
   activities: z.array(ActivitySchema),
   startHour: z.number().default(9),
   endHour: z.number().optional().describe('The hour the day must end by (e.g., departure time).'),
+  startLocation: z.string().optional().default('Tewksbury, MA'),
+  endLocation: z.string().optional().default('Tewksbury, MA'),
 });
 
 const OptimizedItemSchema = z.object({
@@ -50,11 +53,8 @@ const optimizePrompt = ai.definePrompt({
   input: { schema: OptimizeInputSchema },
   output: { schema: OptimizeOutputSchema },
   prompt: `You are an expert travel logistics planner.
-The user is planning a day starting from Tewksbury, MA.
-
-Available hours for this day: 
-Start: {{{startHour}}}:00
-{{#if endHour}}End: {{{endHour}}}:00 (strictly no activities after this time){{/if}}
+User starts today at: {{{startLocation}}} at {{{startHour}}}:00.
+{{#if endHour}}The day must end by: {{{endHour}}}:00 at {{{endLocation}}}.{{else}}The day ends at: {{{endLocation}}}.{{/if}}
 
 Activities to schedule:
 {{#each activities}}
@@ -62,11 +62,11 @@ Activities to schedule:
 {{/each}}
 
 Rules:
-1. Reorder activities to minimize travel time.
+1. Reorder activities to minimize travel time starting from {{{startLocation}}}.
 2. Respect FIXED times exactly.
-3. If endHour is provided, ensure the "Return to Tewksbury" finishes before endHour.
+3. If endHour is provided, ensure the "Return to {{{endLocation}}}" finishes before endHour.
 4. Insert a 60-min lunch if there's a gap around noon.
-5. Always include "Return to Tewksbury" at the end.`,
+5. Always calculate travel time from the previous location (or start location for the first activity).`,
 });
 
 const optimizeFlow = ai.defineFlow(

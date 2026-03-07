@@ -1,7 +1,7 @@
 
 "use client"
 
-import { usePlanner, PlannedActivity, DayPlan } from "./planner-store";
+import { usePlanner, PlannedActivity, DayPlan, TransitMethod } from "./planner-store";
 import { ActivityCard } from "./ActivityCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -9,21 +9,23 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Map, 
   Sparkles, 
   Search, 
   ListTodo, 
-  Trash2, 
   Clock, 
   LayoutDashboard, 
   Settings2, 
   Utensils, 
   Loader2, 
-  Wand2, 
   CalendarClock,
   Send,
-  MessageSquare
+  MessageSquare,
+  Plane,
+  TrainFront,
+  Car
 } from "lucide-react";
 import { DiscoveryTable } from "./DiscoveryTable";
 import { AIRecommendations } from "./AIRecommendations";
@@ -50,6 +52,14 @@ export function PlannerUI() {
     departureDate,
     setArrivalDate,
     setDepartureDate,
+    arrivalMethod,
+    setArrivalMethod,
+    arrivalLocation,
+    setArrivalLocation,
+    departureMethod,
+    setDepartureMethod,
+    departureLocation,
+    setDepartureLocation,
     dailyActiveHours,
     setDailyActiveHours,
     defaultStartHour,
@@ -64,7 +74,6 @@ export function PlannerUI() {
 
   const activeDay = days.find(d => d.id === activeDayId) || days[0];
 
-  // Guard for initial hydration or empty days
   if (!activeDay) {
     return (
       <div className="flex flex-col items-center justify-center p-20 gap-4">
@@ -117,7 +126,9 @@ export function PlannerUI() {
             fixedStartTime: a.fixedStartTime
           })),
           startHour: day.startHourOverride || defaultStartHour,
-          endHour: day.endHourOverride
+          endHour: day.endHourOverride,
+          startLocation: day.startLocation,
+          endLocation: day.endLocation
         });
 
         if (result?.itinerary) {
@@ -221,13 +232,31 @@ export function PlannerUI() {
 
   const generateGoogleMapsLink = () => {
     if (!activeDay || !activeDay.activities) return "https://www.google.com/maps";
-    const origin = "Tewksbury,MA";
+    const origin = activeDay.startLocation || "Tewksbury,MA";
     const destinations = activeDay.activities
       .filter(a => !a.isOptional)
       .map(a => encodeURIComponent(a.address))
       .join('/');
-    return destinations ? `https://www.google.com/maps/dir/${origin}/${destinations}/${origin}` : `https://www.google.com/maps/dir/${origin}`;
+    const destination = activeDay.endLocation || "Tewksbury,MA";
+    return destinations ? `https://www.google.com/maps/dir/${origin}/${destinations}/${destination}` : `https://www.google.com/maps/dir/${origin}/${destination}`;
   };
+
+  const transitIcons = {
+    airport: <Plane className="w-3.5 h-3.5" />,
+    train: <TrainFront className="w-3.5 h-3.5" />,
+    car: <Car className="w-3.5 h-3.5" />
+  };
+
+  const airportOptions = [
+    { name: "BOS - Logan International", value: "Boston Logan International Airport" },
+    { name: "MHT - Manchester-Boston", value: "Manchester-Boston Regional Airport" }
+  ];
+
+  const trainOptions = [
+    { name: "Lowell Station", value: "Lowell MBTA Station" },
+    { name: "Boston North Station", value: "Boston North Station" },
+    { name: "Boston South Station", value: "Boston South Station" }
+  ];
 
   return (
     <Tabs defaultValue="discover" className="w-full">
@@ -254,7 +283,6 @@ export function PlannerUI() {
 
       <TabsContent value="plan">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
-          {/* LEFT COLUMN: Settings & Shortlist */}
           <div className="w-full lg:w-[380px] flex flex-col gap-6 lg:sticky lg:top-8">
             <div className="bg-white p-6 rounded-3xl border border-primary/10 shadow-lg space-y-6">
               <div className="flex items-center gap-3 text-primary">
@@ -262,28 +290,98 @@ export function PlannerUI() {
                 <h3 className="text-xs font-black uppercase tracking-widest">Trip Configuration</h3>
               </div>
               
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-[9px] uppercase font-black text-muted-foreground">Arrival</Label>
+              <div className="space-y-6">
+                <div className="space-y-4 p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                  <div className="flex items-center gap-2 text-primary">
+                    <div className="bg-white p-1.5 rounded-lg shadow-sm">
+                      <CalendarClock className="w-4 h-4" />
+                    </div>
+                    <Label className="text-[10px] font-black uppercase">Arrival Info</Label>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3">
                     <Input 
                       type="datetime-local" 
                       value={format(arrivalDate, "yyyy-MM-dd'T'HH:mm")}
                       onChange={(e) => setArrivalDate(new Date(e.target.value))}
-                      className="h-10 text-xs font-bold rounded-xl border-primary/10"
+                      className="h-10 text-xs font-bold rounded-xl bg-white"
                     />
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['airport', 'train', 'car'] as TransitMethod[]).map((m) => (
+                        <Button
+                          key={m}
+                          variant={arrivalMethod === m ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            setArrivalMethod(m);
+                            if (m === 'car') setArrivalLocation('Tewksbury, MA');
+                          }}
+                          className="h-9 p-0 rounded-lg text-[9px] font-black uppercase gap-1.5"
+                        >
+                          {transitIcons[m]} {m}
+                        </Button>
+                      ))}
+                    </div>
+                    {arrivalMethod !== 'car' && (
+                      <Select value={arrivalLocation} onValueChange={setArrivalLocation}>
+                        <SelectTrigger className="h-9 text-[10px] font-bold bg-white rounded-xl">
+                          <SelectValue placeholder={`Select ${arrivalMethod}`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(arrivalMethod === 'airport' ? airportOptions : trainOptions).map(opt => (
+                            <SelectItem key={opt.value} value={opt.value} className="text-[10px] font-bold">{opt.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[9px] uppercase font-black text-muted-foreground">Departure</Label>
+                </div>
+
+                <div className="space-y-4 p-4 rounded-2xl bg-accent/5 border border-accent/10">
+                  <div className="flex items-center gap-2 text-accent">
+                    <div className="bg-white p-1.5 rounded-lg shadow-sm">
+                      <CalendarClock className="w-4 h-4" />
+                    </div>
+                    <Label className="text-[10px] font-black uppercase">Departure Info</Label>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3">
                     <Input 
                       type="datetime-local" 
                       value={format(departureDate, "yyyy-MM-dd'T'HH:mm")}
                       onChange={(e) => setDepartureDate(new Date(e.target.value))}
-                      className="h-10 text-xs font-bold rounded-xl border-primary/10"
+                      className="h-10 text-xs font-bold rounded-xl bg-white"
                     />
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['airport', 'train', 'car'] as TransitMethod[]).map((m) => (
+                        <Button
+                          key={m}
+                          variant={departureMethod === m ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            setDepartureMethod(m);
+                            if (m === 'car') setDepartureLocation('Tewksbury, MA');
+                          }}
+                          className="h-9 p-0 rounded-lg text-[9px] font-black uppercase gap-1.5"
+                        >
+                          {transitIcons[m]} {m}
+                        </Button>
+                      ))}
+                    </div>
+                    {departureMethod !== 'car' && (
+                      <Select value={departureLocation} onValueChange={setDepartureLocation}>
+                        <SelectTrigger className="h-9 text-[10px] font-bold bg-white rounded-xl">
+                          <SelectValue placeholder={`Select ${departureMethod}`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(departureMethod === 'airport' ? airportOptions : trainOptions).map(opt => (
+                            <SelectItem key={opt.value} value={opt.value} className="text-[10px] font-bold">{opt.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                 </div>
-                <div className="space-y-1.5">
+
+                <div className="space-y-1.5 px-1">
                   <Label className="text-[9px] uppercase font-black text-muted-foreground">Daily Activity Limit (Hours)</Label>
                   <Input 
                     type="number" 
@@ -291,7 +389,6 @@ export function PlannerUI() {
                     onChange={(e) => setDailyActiveHours(parseInt(e.target.value) || 8)}
                     className="h-10 text-sm font-bold rounded-xl border-primary/10"
                   />
-                  <p className="text-[9px] text-muted-foreground italic">Excludes travel time back to Tewksbury.</p>
                 </div>
               </div>
 
@@ -335,7 +432,6 @@ export function PlannerUI() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Active Day Itinerary */}
           <div className="flex-1 w-full space-y-6">
             <AIRecommendations />
             
@@ -373,7 +469,7 @@ export function PlannerUI() {
                   <h2 className="text-2xl font-black text-foreground tracking-tight">{activeDay.name} Timeline</h2>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black flex items-center gap-2 mt-1">
                     <Clock className="w-3 h-3" />
-                    {activeDay.startHourOverride !== undefined ? `Starts at ${activeDay.startHourOverride}:00` : "Full Day"}
+                    Starting from {activeDay.startLocation}
                     {activeDay.endHourOverride !== undefined ? ` • Ends by ${activeDay.endHourOverride}:00` : ""}
                   </p>
                 </div>
@@ -391,7 +487,6 @@ export function PlannerUI() {
                 <div className="space-y-12 pl-6 border-l-2 border-primary/10 relative">
                   {activeDay.activities.map((activity, idx) => (
                     <div key={activity.id} className="relative">
-                      {/* Timeline Dot */}
                       <div className={cn(
                         "absolute -left-[2.15rem] top-0 w-8 h-8 rounded-2xl border-2 bg-white flex items-center justify-center font-black text-[11px] shadow-sm",
                         activity.fixedStartTime ? "border-accent text-accent animate-pulse" : "border-primary text-primary"
@@ -399,7 +494,6 @@ export function PlannerUI() {
                         {activity.fixedStartTime ? "!" : idx + 1}
                       </div>
 
-                      {/* Travel Marker (except first item) */}
                       {idx > 0 && (
                         <div className="absolute -left-[1.6rem] -top-8 text-[9px] font-black text-muted-foreground/40 uppercase bg-white px-2 py-0.5 rounded-full border border-primary/5">
                           {activity.travelTimeFromPrev ? `~${activity.travelTimeFromPrev}m Travel` : "Travel"}
@@ -424,10 +518,15 @@ export function PlannerUI() {
                       />
                     </div>
                   ))}
+                  
+                  <div className="relative pt-4">
+                     <div className="absolute -left-[1.6rem] top-2 text-[9px] font-black text-muted-foreground/60 uppercase bg-white px-2 py-0.5 rounded-full border border-primary/5">
+                        Return to {activeDay.endLocation || "Tewksbury"}
+                      </div>
+                  </div>
                 </div>
               )}
 
-              {/* Chat Interface */}
               <div className="mt-16 pt-10 border-t border-primary/5">
                 <div className="bg-primary/5 rounded-[32px] p-8 border border-primary/10">
                   <div className="flex items-center gap-3 mb-6 text-primary">
@@ -454,20 +553,6 @@ export function PlannerUI() {
                     >
                       {isChatting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                     </Button>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2 px-1">
-                    <button 
-                      onClick={() => setChatInput("Spread the boat activities across different days")}
-                      className="text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors bg-white/50 px-3 py-1 rounded-full border border-primary/5"
-                    >
-                      "Avoid same-day duplicates"
-                    </button>
-                    <button 
-                      onClick={() => setChatInput("Make the first day focused on history")}
-                      className="text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors bg-white/50 px-3 py-1 rounded-full border border-primary/5"
-                    >
-                      "Theme: History Day"
-                    </button>
                   </div>
                 </div>
               </div>

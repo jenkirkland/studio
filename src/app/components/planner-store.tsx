@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
@@ -22,7 +23,11 @@ export interface DayPlan {
   activities: PlannedActivity[];
   startHourOverride?: number;
   endHourOverride?: number;
+  startLocation?: string;
+  endLocation?: string;
 }
+
+export type TransitMethod = 'airport' | 'train' | 'car';
 
 interface PlannerContextType {
   shortlist: Activity[];
@@ -30,10 +35,18 @@ interface PlannerContextType {
   activeDayId: string;
   arrivalDate: Date;
   departureDate: Date;
+  arrivalMethod: TransitMethod;
+  arrivalLocation: string;
+  departureMethod: TransitMethod;
+  departureLocation: string;
   dailyActiveHours: number;
   defaultStartHour: number;
   setArrivalDate: (d: Date) => void;
   setDepartureDate: (d: Date) => void;
+  setArrivalMethod: (m: TransitMethod) => void;
+  setArrivalLocation: (l: string) => void;
+  setDepartureMethod: (m: TransitMethod) => void;
+  setDepartureLocation: (l: string) => void;
   setDailyActiveHours: (n: number) => void;
   setDefaultStartHour: (n: number) => void;
   setActiveDayId: (id: string) => void;
@@ -57,6 +70,10 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
   
   const [arrivalDate, setArrivalDate] = useState<Date>(new Date());
   const [departureDate, setDepartureDate] = useState<Date>(addDays(new Date(), 2));
+  const [arrivalMethod, setArrivalMethod] = useState<TransitMethod>('car');
+  const [arrivalLocation, setArrivalLocation] = useState('Tewksbury, MA');
+  const [departureMethod, setDepartureMethod] = useState<TransitMethod>('car');
+  const [departureLocation, setDepartureLocation] = useState('Tewksbury, MA');
   
   const [days, setDays] = useState<DayPlan[]>([]);
   const [activeDayId, setActiveDayId] = useState<string>('');
@@ -70,7 +87,6 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       const currentDate = addDays(arrivalDate, i);
       const dateStr = format(currentDate, 'yyyy-MM-dd');
       
-      // Preserve existing activities if possible
       const existing = days.find(d => d.date === dateStr);
       
       newDays.push({
@@ -78,9 +94,10 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
         name: `Day ${i + 1} (${format(currentDate, 'MMM d')})`,
         date: dateStr,
         activities: existing?.activities || [],
-        // Handle half-days based on arrival/departure times
         startHourOverride: i === 0 ? arrivalDate.getHours() : undefined,
-        endHourOverride: i === numDays - 1 ? departureDate.getHours() : undefined
+        endHourOverride: i === numDays - 1 ? departureDate.getHours() : undefined,
+        startLocation: i === 0 ? arrivalLocation : 'Tewksbury, MA',
+        endLocation: i === numDays - 1 ? departureLocation : 'Tewksbury, MA'
       });
     }
     
@@ -88,7 +105,7 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
     if (newDays.length > 0 && (!activeDayId || !newDays.find(d => d.id === activeDayId))) {
       setActiveDayId(newDays[0].id);
     }
-  }, [arrivalDate, departureDate]);
+  }, [arrivalDate, departureDate, arrivalLocation, departureLocation]);
 
   const addToShortlist = useCallback((activity: Activity) => {
     setShortlist(prev => {
@@ -108,7 +125,7 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       }
       return day;
     }));
-    setShortlist(prev => prev.filter(a => a.id === activity.id));
+    setShortlist(prev => prev.filter(a => a.id !== activity.id));
   }, []);
 
   const addCustomActivity = useCallback((activity: PlannedActivity, targetDate?: string) => {
@@ -158,10 +175,18 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       activeDayId,
       arrivalDate,
       departureDate,
+      arrivalMethod,
+      arrivalLocation,
+      departureMethod,
+      departureLocation,
       dailyActiveHours,
       defaultStartHour,
       setArrivalDate,
       setDepartureDate,
+      setArrivalMethod,
+      setArrivalLocation,
+      setDepartureMethod,
+      setDepartureLocation,
       setDailyActiveHours,
       setDefaultStartHour,
       setActiveDayId,
