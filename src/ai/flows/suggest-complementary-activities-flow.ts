@@ -39,7 +39,7 @@ export async function suggestComplementaryActivities(input: SuggestComplementary
 
 const prompt = ai.definePrompt({
   name: 'suggestComplementaryActivitiesPrompt',
-  model: 'googleai/gemini-3.0-flash-preview',
+  model: 'googleai/gemini-3-flash-preview',
   input: {schema: SuggestComplementaryActivitiesInputSchema},
   output: {schema: SuggestComplementaryActivitiesOutputSchema},
   prompt: `You are an AI assistant designed to help users plan their day trip starting in Tewksbury, MA.
