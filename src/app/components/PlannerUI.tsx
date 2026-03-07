@@ -54,7 +54,7 @@ export function PlannerUI() {
   return (
     <Tabs defaultValue="discover" className="w-full">
       <div className="flex items-center justify-center mb-8">
-        <TabsList className="grid w-full max-w-md grid-cols-2 bg-muted p-1 border shadow-sm rounded-xl">
+        <TabsList className="grid w-full max-md:max-w-xs max-w-md grid-cols-2 bg-muted p-1 border shadow-sm rounded-xl">
           <TabsTrigger value="discover" className="flex items-center gap-2 rounded-lg py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">
             <Search className="h-4 w-4" /> Discovery Library
           </TabsTrigger>
@@ -75,9 +75,9 @@ export function PlannerUI() {
       </TabsContent>
 
       <TabsContent value="plan" className="animate-in fade-in duration-300">
-        <div className="flex flex-col xl:flex-row gap-8">
-          {/* Left Column: Shortlist & Config */}
-          <div className="w-full xl:w-96 flex flex-col gap-6">
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          {/* Left Column: Shortlist & Config - Sticky on Desktop */}
+          <div className="w-full lg:w-96 flex flex-col gap-6 lg:sticky lg:top-8">
             {/* Trip Config */}
             <div className="bg-white p-5 rounded-2xl border border-primary/20 shadow-sm space-y-4">
               <div className="flex items-center gap-2 text-primary">
@@ -124,7 +124,7 @@ export function PlannerUI() {
               </Badge>
             </div>
             
-            <ScrollArea className="h-[600px] rounded-2xl border bg-secondary/20 p-4">
+            <ScrollArea className="h-[400px] lg:h-[600px] rounded-2xl border bg-secondary/20 p-4">
               {shortlist.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center p-6 opacity-60">
                   <div className="bg-white p-3 rounded-full mb-3 shadow-sm border">
@@ -149,7 +149,7 @@ export function PlannerUI() {
           </div>
 
           {/* Right Column: Main Planning Area */}
-          <div className="flex-1 flex flex-col gap-6">
+          <div className="flex-1 w-full flex flex-col gap-6">
             {/* Toolbar */}
             <div className="bg-white p-4 rounded-2xl border shadow-sm flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide max-w-full">
@@ -215,7 +215,7 @@ export function PlannerUI() {
             )}
 
             {/* Itinerary Area */}
-            <div className="bg-white rounded-3xl border shadow-xl p-8 min-h-[600px] flex flex-col relative overflow-hidden">
+            <div className="bg-white rounded-3xl border shadow-xl p-6 md:p-8 min-h-[600px] flex flex-col relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/10" />
               
               <div className="flex items-center gap-3 mb-10 pl-4">
@@ -293,7 +293,7 @@ export function PlannerUI() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground bg-primary/5 px-5 py-3 rounded-2xl border border-primary/10 max-w-sm">
+                    <div className="hidden md:flex items-center gap-3 text-[11px] text-muted-foreground bg-primary/5 px-5 py-3 rounded-2xl border border-primary/10 max-w-sm">
                       <Info className="w-4 h-4 text-primary shrink-0" />
                       <span>The "Optimize" button will add meal breaks and reorder stops for efficiency.</span>
                     </div>

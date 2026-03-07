@@ -6,7 +6,6 @@ export interface Activity {
   durationMinutes: number;
   address: string;
   typicalHours?: string;
-  googleMapsUrl?: string;
 }
 
 export const ACTIVITIES: Activity[] = [
@@ -16,8 +15,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'Boston’s central historic park and a great starting point for a classic downtown walk. Easy to pair with the Public Garden or Freedom Trail.',
     type: 'nature',
     durationMinutes: 60,
-    address: '139 Tremont St, Boston, MA 02111',
-    typicalHours: '6:00 AM - 11:30 PM'
+    address: '139 Tremont St, Boston, MA 02111'
   },
   {
     id: 'freedom-trail',
@@ -25,8 +23,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'A classic self-guided walk through Boston’s most famous historic sites. High-density history day without needing a car.',
     type: 'historical',
     durationMinutes: 180,
-    address: 'Boston, MA',
-    typicalHours: 'Always Open (Walking Route)'
+    address: 'Boston, MA'
   },
   {
     id: 'north-end',
@@ -34,8 +31,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'Boston’s old Italian neighborhood with great food, pastries, and historic streets. Ideal for wandering and dinner.',
     type: 'food',
     durationMinutes: 120,
-    address: 'Hanover St, Boston, MA 02113',
-    typicalHours: 'Vibrant 10:00 AM - 11:00 PM'
+    address: 'Hanover St, Boston, MA 02113'
   },
   {
     id: 'newbury-street',
@@ -43,8 +39,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'A relaxed Back Bay stretch for shopping, people-watching, and cafés. Great for a lighter city day.',
     type: 'shopping',
     durationMinutes: 120,
-    address: 'Newbury St, Boston, MA 02116',
-    typicalHours: '10:00 AM - 8:00 PM'
+    address: 'Newbury St, Boston, MA 02116'
   },
   {
     id: 'quincy-market',
@@ -52,8 +47,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'Busy, tourist-friendly food hall and shopping stop near the waterfront. A quick anchor stop in downtown.',
     type: 'food',
     durationMinutes: 60,
-    address: '4 S Market St, Boston, MA 02109',
-    typicalHours: '10:00 AM - 9:00 PM'
+    address: '4 S Market St, Boston, MA 02109'
   },
   {
     id: 'fenway-park',
@@ -61,8 +55,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'A classic Boston sports outing. Best if you want an event-centered afternoon or evening.',
     type: 'sports',
     durationMinutes: 210,
-    address: '4 Jersey St, Boston, MA 02215',
-    typicalHours: 'Varies by Game/Tour'
+    address: '4 Jersey St, Boston, MA 02215'
   },
   {
     id: 'south-end',
@@ -70,26 +63,23 @@ export const ACTIVITIES: Activity[] = [
     description: 'Neighborhood known for restaurants, brownstones, and a more local feel. Great for brunch or dinner.',
     type: 'food',
     durationMinutes: 120,
-    address: 'Tremont St, Boston, MA 02118',
-    typicalHours: 'Vibrant 11:00 AM - 10:00 PM'
+    address: 'Tremont St, Boston, MA 02118'
   },
   {
     id: 'charles-river-esplanade',
     name: 'Charles River Esplanade',
-    description: 'A scenic riverfront path for a casual walk or relaxing outdoor break. Pleasant year-round.',
+    description: 'A scenic riverfront path for a casual walk or relaxing outdoor break.',
     type: 'nature',
     durationMinutes: 90,
-    address: 'Charles River Esplanade, Boston, MA 02116',
-    typicalHours: 'Dawn - Dusk'
+    address: 'Charles River Esplanade, Boston, MA 02116'
   },
   {
     id: 'whale-watching',
     name: 'Whale Watching Cruise',
     description: 'A high-speed catamaran harbor outing. Best in warmer months and easy to combine with the Aquarium.',
-    type: 'nature',
+    type: 'boat tour',
     durationMinutes: 240,
-    address: '1 Long Wharf, Boston, MA 02110',
-    typicalHours: 'Seasonal, Departs 10:00 AM / 1:00 PM'
+    address: '1 Long Wharf, Boston, MA 02110'
   },
   {
     id: 'tea-party-museum',
@@ -97,8 +87,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'A compact, interactive history stop with a tourist-friendly format. Experiential history.',
     type: 'historical',
     durationMinutes: 90,
-    address: '306 Congress St, Boston, MA 02210',
-    typicalHours: '10:00 AM - 5:00 PM'
+    address: '306 Congress St, Boston, MA 02210'
   },
   {
     id: 'hong-kong-karaoke',
@@ -106,8 +95,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'A casual, iconic karaoke bar. Best for a looser night with food and bars nearby.',
     type: 'nightlife',
     durationMinutes: 120,
-    address: '1 Faneuil Hall Square, Boston, MA 02109',
-    typicalHours: '11:00 AM - 2:00 AM'
+    address: '1 Faneuil Hall Square, Boston, MA 02109'
   },
   {
     id: 'aquarium',
@@ -115,8 +103,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'An easy family-friendly or rainy-day stop right on the waterfront.',
     type: 'family',
     durationMinutes: 150,
-    address: '1 Central Wharf, Boston, MA 02110',
-    typicalHours: '9:00 AM - 5:00 PM'
+    address: '1 Central Wharf, Boston, MA 02110'
   },
   {
     id: 'mfa',
@@ -124,8 +111,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'A major museum for art-focused visitors. Can be a quick highlight or a half-day destination.',
     type: 'art',
     durationMinutes: 180,
-    address: '465 Huntington Ave, Boston, MA 02115',
-    typicalHours: '10:00 AM - 5:00 PM (Thurs/Fri till 10 PM)'
+    address: '465 Huntington Ave, Boston, MA 02115'
   },
   {
     id: 'duck-tours',
@@ -133,8 +119,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'A classic first-timer overview of the city with a fun, touristy feel.',
     type: 'sightseeing',
     durationMinutes: 80,
-    address: '4 Copley Pl, Boston, MA 02116',
-    typicalHours: '9:00 AM - Sunset'
+    address: '4 Copley Pl, Boston, MA 02116'
   },
   {
     id: 'gardner-museum',
@@ -142,8 +127,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'A highly atmospheric museum that feels more intimate and memorable than a standard gallery.',
     type: 'art',
     durationMinutes: 120,
-    address: '25 Evans Way, Boston, MA 02115',
-    typicalHours: '11:00 AM - 5:00 PM (Tues Closed)'
+    address: '25 Evans Way, Boston, MA 02115'
   },
   {
     id: 'ica-boston',
@@ -151,8 +135,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'Modern art and waterfront option in the Seaport District. Contemporary and polished.',
     type: 'art',
     durationMinutes: 90,
-    address: '25 Harbor Shore Dr, Boston, MA 02210',
-    typicalHours: '10:00 AM - 5:00 PM'
+    address: '25 Harbor Shore Dr, Boston, MA 02210'
   },
   {
     id: 'blue-hills',
@@ -160,8 +143,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'A nearby hike option that feels like a real nature outing. Best for active visitors.',
     type: 'nature',
     durationMinutes: 150,
-    address: '695 Hillside St, Milton, MA 02186',
-    typicalHours: 'Dawn - Dusk'
+    address: '695 Hillside St, Milton, MA 02186'
   },
   {
     id: 'salem',
@@ -169,8 +151,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'Walkable history, quirky shops, and atmosphere. Distinctly New England.',
     type: 'historical',
     durationMinutes: 240,
-    address: 'Salem, MA',
-    typicalHours: 'Best 10:00 AM - 6:00 PM'
+    address: 'Salem, MA'
   },
   {
     id: 'rockport',
@@ -178,8 +159,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'Classic coastal village day with shops, views, and an easy strolling pace.',
     type: 'shopping',
     durationMinutes: 150,
-    address: 'Bearskin Neck, Rockport, MA 01966',
-    typicalHours: '10:00 AM - 5:30 PM'
+    address: 'Bearskin Neck, Rockport, MA 01966'
   },
   {
     id: 'tree-house-tewksbury',
@@ -187,8 +167,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'A destination brewery for beer and pizza in a local setting.',
     type: 'food',
     durationMinutes: 120,
-    address: '1880 Main St, Tewksbury, MA 01876',
-    typicalHours: '11:00 AM - 9:00 PM'
+    address: '1880 Main St, Tewksbury, MA 01876'
   },
   {
     id: 'minuteman-park',
@@ -196,8 +175,7 @@ export const ACTIVITIES: Activity[] = [
     description: 'Revolutionary history with walking paths. Great for history buffs and low-key trips.',
     type: 'historical',
     durationMinutes: 120,
-    address: '250 N Great Rd, Lincoln, MA 01773',
-    typicalHours: '9:00 AM - 5:00 PM'
+    address: '250 N Great Rd, Lincoln, MA 01773'
   },
   {
     id: 'walden-pond',
@@ -205,7 +183,38 @@ export const ACTIVITIES: Activity[] = [
     description: 'A peaceful nature stop for walking, swimming, or quiet reflection.',
     type: 'nature',
     durationMinutes: 90,
-    address: '915 Walden St, Concord, MA 01742',
-    typicalHours: '8:00 AM - Sunset'
+    address: '915 Walden St, Concord, MA 01742'
+  },
+  {
+    id: 'museum-of-science',
+    name: 'Museum of Science',
+    description: 'A reliable all-ages museum with enough to fill a few hours without being overwhelming.',
+    type: 'science',
+    durationMinutes: 180,
+    address: '1 Science Park, Boston, MA 02114'
+  },
+  {
+    id: 'hammond-castle',
+    name: 'Hammond Castle Museum',
+    description: 'A quirky, memorable castle stop that feels different from the usual museum circuit.',
+    type: 'architecture',
+    durationMinutes: 90,
+    address: '80 Hesperus Ave, Gloucester, MA 01930'
+  },
+  {
+    id: 'strawbery-banke',
+    name: 'Strawbery Banke Museum',
+    description: 'A strong open-air history stop that works especially well in good weather.',
+    type: 'living museum',
+    durationMinutes: 150,
+    address: '14 Hancock St, Portsmouth, NH 03801'
+  },
+  {
+    id: 'plimoth-patuxet',
+    name: 'Plimoth Patuxet Museums',
+    description: 'A substantial living-history destination that can easily be the main event of the day.',
+    type: 'living museum',
+    durationMinutes: 240,
+    address: '137 Warren Ave, Plymouth, MA 02360'
   }
 ];
