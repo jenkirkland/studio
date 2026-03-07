@@ -77,7 +77,7 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
   const [departureMethod, setDepartureMethod] = useState<TransitMethod>('car');
   const [departureLocation, setDepartureLocation] = useState('Tewksbury, MA');
   
-  // Calculate days immediately to avoid Initializing loop
+  // Stabilize initial days to prevent Initializing loop
   const initialDays = useMemo(() => {
     const start = startOfDay(arrivalDate);
     const end = isBefore(departureDate, arrivalDate) ? addDays(arrivalDate, 1) : startOfDay(departureDate);
@@ -101,8 +101,8 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
   const [days, setDays] = useState<DayPlan[]>(initialDays);
   const [activeDayId, setActiveDayId] = useState<string>(initialDays[0]?.id || '');
 
+  // Synchronize days on date change WITHOUT full re-init if possible
   useEffect(() => {
-    // Synchronize days state with calculated initialDays while preserving existing activities
     const start = startOfDay(arrivalDate);
     const end = isBefore(departureDate, arrivalDate) ? addDays(arrivalDate, 1) : startOfDay(departureDate);
     const numDays = Math.max(1, differenceInDays(end, start) + 1);
