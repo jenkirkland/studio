@@ -68,11 +68,13 @@ export function OptimizeItinerary() {
         description: "We've reordered stops around your fixed times and calculated travel.",
       });
     } catch (err: any) {
-      console.error(err);
+      console.error("Optimization Error:", err);
       const isQuotaError = err.message?.includes('429') || err.message?.includes('RESOURCE_EXHAUSTED');
       toast({
-        title: isQuotaError ? "Too Many Requests" : "Optimization Failed",
-        description: isQuotaError ? "AI limit reached. Please wait 30 seconds and try again." : "Something went wrong while calculating your route.",
+        title: isQuotaError ? "AI is Busy" : "Optimization Failed",
+        description: isQuotaError 
+          ? "We've hit the AI request limit. Please wait about 30 seconds and try again." 
+          : "Something went wrong while calculating your route.",
         variant: "destructive"
       });
     } finally {
@@ -86,10 +88,10 @@ export function OptimizeItinerary() {
       disabled={loading}
       variant="outline"
       size="sm"
-      className="border-primary text-primary hover:bg-primary/5 h-8 text-xs font-bold"
+      className="border-primary text-primary hover:bg-primary/5 h-8 text-[10px] font-black uppercase tracking-widest"
     >
       {loading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Wand2 className="w-3 h-3 mr-2" />}
-      Optimize Order
+      Optimize
     </Button>
   );
 }
