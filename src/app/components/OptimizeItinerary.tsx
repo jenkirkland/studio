@@ -2,7 +2,7 @@
 "use client"
 
 import { useState } from 'react';
-import { usePlanner, PlannedActivity } from './planner-store';
+import { usePlanner, PlannedActivity, PACE_MULTIPLIERS } from './planner-store';
 import { optimizeItinerary } from '@/ai/flows/optimize-itinerary-flow';
 import { Button } from '@/components/ui/button';
 import { Loader2, Wand2 } from 'lucide-react';
@@ -10,7 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { recalculateTimelineWithTraffic } from '@/lib/calculate-routes';
 
 export function OptimizeItinerary() {
-  const { days, activeDayId, setDayActivities, startHour } = usePlanner();
+  const { days, activeDayId, setDayActivities, startHour, activityPace } = usePlanner();
   const [loading, setLoading] = useState(false);
   const activeDay = days.find(d => d.id === activeDayId);
 
@@ -30,7 +30,7 @@ export function OptimizeItinerary() {
         activities: activeDay.activities.map(a => ({
           id: a.id,
           name: a.name,
-          durationMinutes: a.durationMinutes,
+          durationMinutes: Math.round((a.durationMinutes || 60) * PACE_MULTIPLIERS[activityPace]),
           type: a.type,
           address: a.address,
           fixedStartTime: a.fixedStartTime
@@ -58,7 +58,7 @@ export function OptimizeItinerary() {
           name: item.name,
           description: item.reason || (existing?.description || "A recommended stop for your day."),
           type: item.type === 'meal' ? 'food' : (existing?.type || 'sightseeing'),
-          durationMinutes: item.durationMinutes,
+          durationMinutes: item.durationMinutes ? Math.round(item.durationMinutes / PACE_MULTIPLIERS[activityPace]) : (existing?.durationMinutes || 60),
           address: existing?.address || item.name,
           scheduledTime: item.startTime,
           endTime: item.endTime,
@@ -75,8 +75,19 @@ export function OptimizeItinerary() {
       const startH = activeDay.startHourOverride || startHour || 9;
 
       let finalActivities = optimizedActivities;
+
+      const scaledActivities = optimizedActivities.map(a => ({
+        ...a,
+        durationMinutes: Math.round((a.durationMinutes || 60) * PACE_MULTIPLIERS[activityPace])
+      }));
+
       try {
-        finalActivities = await recalculateTimelineWithTraffic(optimizedActivities, startLoc, activeDay.date, startH);
+        const routedActivities = await recalculateTimelineWithTraffic(scaledActivities, startLoc, activeDay.date, startH);
+
+        finalActivities = routedActivities.map(a => ({
+          ...a,
+          durationMinutes: Math.round((a.durationMinutes || 60) / PACE_MULTIPLIERS[activityPace])
+        }));
       } catch (e) {
         console.error(`Routing failed, falling back to AI times:`, e);
       }

@@ -11,19 +11,75 @@ export interface Activity {
 export const ACTIVITIES: Activity[] = [
   {
     id: 'boston-common',
-    name: 'Boston Common',
+    name: 'Boston Common (Freedom Trail)',
     description: 'Boston’s central historic park and a great starting point for a classic downtown walk. Easy to pair with the Public Garden, Beacon Hill, or the Freedom Trail.',
     type: 'nature',
     durationMinutes: 60,
     address: '139 Tremont St, Boston, MA 02111'
   },
   {
-    id: 'freedom-trail',
-    name: 'Freedom Trail',
-    description: 'A classic self-guided walk through Boston’s most famous historic sites. High-density history day without needing a car.',
+    id: 'mass-state-house',
+    name: 'Massachusetts State House (Freedom Trail)',
+    description: 'The state capitol building with its iconic golden dome, located across from the Common.',
     type: 'historical',
-    durationMinutes: 180,
-    address: 'Boston, MA'
+    durationMinutes: 45,
+    address: '24 Beacon St, Boston, MA 02133'
+  },
+  {
+    id: 'park-street-church',
+    name: 'Park Street Church (Freedom Trail)',
+    description: 'Historic church known for its towering steeple and rich abolitionist history.',
+    type: 'historical',
+    durationMinutes: 30,
+    address: '1 Park St, Boston, MA 02108'
+  },
+  {
+    id: 'granary-burying-ground',
+    name: 'Granary Burying Ground (Freedom Trail)',
+    description: 'Final resting place of Paul Revere, Samuel Adams, and John Hancock.',
+    type: 'historical',
+    durationMinutes: 45,
+    address: 'Tremont St, Boston, MA 02108'
+  },
+  {
+    id: 'kings-chapel',
+    name: 'Kings Chapel (Freedom Trail)',
+    description: 'Historic stone church and the oldest English burying ground in Boston proper.',
+    type: 'historical',
+    durationMinutes: 30,
+    address: '58 Tremont St, Boston, MA 02108'
+  },
+  {
+    id: 'old-south-meeting',
+    name: 'Old South Meeting House (Freedom Trail)',
+    description: 'The organizing site for the Boston Tea Party.',
+    type: 'historical',
+    durationMinutes: 45,
+    address: '310 Washington St, Boston, MA 02108'
+  },
+  {
+    id: 'old-state-house',
+    name: 'Old State House (Freedom Trail)',
+    description: 'Site of the Boston Massacre and the reading of the Declaration of Independence.',
+    type: 'historical',
+    durationMinutes: 60,
+    address: '206 Washington St, Boston, MA 02109'
+  },
+  {
+    id: 'paul-revere-house',
+    name: 'Paul Revere House (Freedom Trail)',
+    description: 'The colonial home of Paul Revere, nestled in the North End.',
+    type: 'historical',
+    durationMinutes: 45,
+    address: '19 N Square, Boston, MA 02113'
+  },
+  {
+    id: 'old-north-church',
+    name: 'Old North Church (Freedom Trail)',
+    description: 'Famous for the "One if by land, two if by sea" lantern signal.',
+    type: 'historical',
+    durationMinutes: 45,
+    address: '193 Salem St, Boston, MA 02113'
   },
   {
     id: 'north-end',
@@ -99,7 +155,7 @@ export const ACTIVITIES: Activity[] = [
   },
   {
     id: 'faneuil-hall',
-    name: 'Faneuil Hall Marketplace',
+    name: 'Faneuil Hall Marketplace (Freedom Trail)',
     description: 'Lively gathering area for snacks, shopping, and people-watching.',
     type: 'shopping',
     durationMinutes: 60,
@@ -187,7 +243,7 @@ export const ACTIVITIES: Activity[] = [
   },
   {
     id: 'uss-constitution',
-    name: 'USS Constitution',
+    name: 'USS Constitution (Freedom Trail)',
     description: 'History and waterfront stop in Charlestown Navy Yard.',
     type: 'historical',
     durationMinutes: 120,
