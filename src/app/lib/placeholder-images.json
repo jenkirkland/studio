@@ -2,27 +2,39 @@
   "placeholderImages": [
     {
       "id": "hero-wanderer",
-      "description": "Scenic view of the Merrimack River at sunset",
-      "imageUrl": "https://picsum.photos/seed/merrimack/1200/600",
-      "imageHint": "river landscape"
+      "description": "Scenic view of the Boston skyline from the harbor",
+      "imageUrl": "https://picsum.photos/seed/boston-harbor/1200/600",
+      "imageHint": "boston skyline"
     },
     {
-      "id": "activity-farm",
-      "description": "Farm animals in a peaceful setting",
-      "imageUrl": "https://picsum.photos/seed/farm/600/400",
-      "imageHint": "farm animals"
-    },
-    {
-      "id": "activity-art",
-      "description": "Artist studio with colorful paintings",
-      "imageUrl": "https://picsum.photos/seed/art/600/400",
-      "imageHint": "art studio"
+      "id": "activity-history",
+      "description": "Historic brick street on the Freedom Trail",
+      "imageUrl": "https://picsum.photos/seed/history/600/400",
+      "imageHint": "historic city"
     },
     {
       "id": "activity-food",
-      "description": "Delicious local artisanal food",
+      "description": "Delicious Italian cannoli in the North End",
       "imageUrl": "https://picsum.photos/seed/food/600/400",
-      "imageHint": "delicious food"
+      "imageHint": "italian food"
+    },
+    {
+      "id": "activity-nature",
+      "description": "Beautiful park trees and green space",
+      "imageUrl": "https://picsum.photos/seed/park/600/400",
+      "imageHint": "nature park"
+    },
+    {
+      "id": "activity-art",
+      "description": "Contemporary art gallery with modern paintings",
+      "imageUrl": "https://picsum.photos/seed/art/600/400",
+      "imageHint": "art gallery"
+    },
+    {
+      "id": "activity-shopping",
+      "description": "Boutique shops on a charming street",
+      "imageUrl": "https://picsum.photos/seed/shopping/600/400",
+      "imageHint": "shopping street"
     }
   ]
 }
