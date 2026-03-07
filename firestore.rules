@@ -3,47 +3,41 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * ITINERARY PLANNER SECURITY MODEL
-     * 
-     * Core Philosophy:
-     * This ruleset implements a hybrid security model designed for a travel planning application. 
-     * It combines Public Read access for curated data (Activities) with a strict Ownership model 
-     * for personal data (Itineraries). It also supports a "Shared via Link" mechanism using 
-     * unique share codes.
-     * 
-     * Data Structure:
-     * - /activities: A flat, top-level collection of pre-curated points of interest.
-     * - /itineraries/{itineraryId}: A top-level collection of user-created plans.
-     * - /itineraries/{itineraryId}/itineraryActivities/{id}: A subcollection for specific 
-     *   activities mapped to an itinerary.
-     * 
-     * Key Security Decisions:
-     * 1. Public Activities: Activities are managed by administrators (outside this scope) 
-     *    and are globally readable to allow users to browse and plan without restriction.
-     * 2. Denormalized Authorization: To ensure high performance and avoid costly cross-document 
-     *    lookups (get() calls), 'ownerId' and 'shareCode' are denormalized from the parent 
-     *    Itinerary into every ItineraryActivity document.
-     * 3. Ownership-Based Writes: All modifications to itineraries and their activities 
-     *    require the user's UID to match the 'ownerId' stored on the document.
-     * 4. Private Sharing: Itineraries are protected from public listing. Only the owner 
-     *    can list their itineraries. Individual itineraries are accessible via 'get' 
-     *    requests if the user is the owner or if the document possesses a shareCode 
-     *    (acting as an unlisted but accessible resource).
+     * CORE PHILOSOPHY
+     * This ruleset enforces a strict user-ownership model for personal data while providing 
+     * read access to global content. It prioritizes Authorization Independence by using 
+     * path-based security and denormalized fields, ensuring rules remain performant 
+     * without needing deep document lookups (get() calls).
+     *
+     * DATA STRUCTURE
+     * 1. /activities/{activityId}: Global, curated activities accessible to all users.
+     * 2. /users/{userId}/dayPlans/{dayPlanId}: User-owned travel itineraries.
+     * 3. /users/{userId}/dayPlans/{dayPlanId}/dayPlanActivities/{dayPlanActivityId}: 
+     *    Specific activity instances within a day plan, nested under the owner's path.
+     *
+     * KEY SECURITY DECISIONS
+     * - Ownership is established via the {userId} path parameter for all user-specific data.
+     * - Activities are read-only for standard users; write access is restricted to 
+     *   administrative processes (not defined in this public-facing ruleset).
+     * - Relational integrity is enforced by ensuring internal document IDs (like dayPlanId) 
+     *   match the path they are stored in during creation and remain immutable.
+     * - Prototyping Mode: Schema validation (types, optional fields) is omitted to allow 
+     *   for rapid iteration, focusing strictly on authorization and relational links.
      */
 
     // --- Helper Functions ---
 
-    /** @description Checks if the request is from a signed-in user. */
+    /** @description Checks if the request is from an authenticated user. */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /** @description Checks if the provided UID matches the authenticated user. */
+    /** @description Checks if the authenticated user matches the provided userId. */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /** @description Checks if the document exists and the user is the owner. */
+    /** @description Verifies ownership and ensures the document exists for updates or deletes. */
     function isExistingOwner(userId) {
       return resource != null && isOwner(userId);
     }
@@ -51,64 +45,60 @@ service cloud.firestore {
     // --- Collection Rules ---
 
     /**
-     * @description Rules for the curated activities library.
+     * @description Publicly accessible, curated list of activities. Read-only for authenticated users.
      * @path /activities/{activityId}
-     * @allow get, list (public)
-     * @deny create, update, delete (all users)
-     * @principle Public Read-Only: Curated library data is open for consumption but locked for modification.
+     * @allow get (read) if user is signed in.
+     * @deny create (write) for all standard users.
+     * @principle Provides global data access while preventing unauthorized modifications.
      */
     match /activities/{activityId} {
-      allow read: if true;
+      allow get, list: if isSignedIn();
       allow create, update, delete: if false;
     }
 
     /**
-     * @description Rules for top-level user itineraries.
-     * @path /itineraries/{itineraryId}
-     * @allow get: if owner OR if it has a share code (private link).
-     * @allow list: if owner.
-     * @allow create: if ownerId in data matches auth UID.
-     * @allow update, delete: if user is the established owner.
-     * @principle Ownership: Only the creator can manage or list their own itineraries.
+     * @description User-specific day plans. Ownership is derived from the {userId} path.
+     * @path /users/{userId}/dayPlans/{dayPlanId}
+     * @allow list (read) if request.auth.uid == userId.
+     * @deny update (write) if request.auth.uid != userId.
+     * @principle Path-based ownership ensures users can only access their own itineraries.
      */
-    match /itineraries/{itineraryId} {
-      // Owners can list their itineraries. Public listing is denied.
-      allow list: if isOwner(resource.data.ownerId);
-
-      // Access is allowed if owner, OR if the document has a share code (supporting private link access).
-      allow get: if isOwner(resource.data.ownerId) || (resource.data.shareCode != null);
-
-      // Verify the creator sets themselves as the owner.
-      allow create: if isOwner(request.resource.data.ownerId);
-
-      // Verify user is existing owner and prevent transferring ownership to another UID.
-      allow update: if isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
-
-      allow delete: if isExistingOwner(resource.data.ownerId);
+    match /users/{userId}/dayPlans/{dayPlanId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update, delete: if isExistingOwner(userId);
 
       /**
-       * @description Rules for activities within a specific itinerary.
-       * @path /itineraries/{itineraryId}/itineraryActivities/{itineraryActivityId}
-       * @allow read: if parent itinerary owner OR via shared itinerary access.
-       * @allow create: if ownerId matches and relational integrity is maintained.
-       * @allow update, delete: if user is the established owner.
-       * @principle Denormalized Auth: Uses fields on the document itself to avoid parent-document lookups.
+       * @description Activities within a specific day plan.
+       * @path /users/{userId}/dayPlans/{dayPlanId}/dayPlanActivities/{dayPlanActivityId}
+       * @allow create if user owns the path AND dayPlanId in data matches path.
+       * @deny update if user attempts to change the dayPlanId relationship.
+       * @principle Validates relational integrity between the subcollection and the parent path.
        */
-      match /itineraryActivities/{itineraryActivityId} {
-        // Read access mirrors the parent itinerary logic using denormalized fields.
-        allow list: if isOwner(resource.data.ownerId);
-        allow get: if isOwner(resource.data.ownerId) || (resource.data.shareCode != null);
-
-        // Validate that the activity belongs to the correct path and the user is the owner.
-        allow create: if isOwner(request.resource.data.ownerId) && request.resource.data.itineraryId == itineraryId;
-
-        // Ensure ownership and path consistency remain immutable during updates.
-        allow update: if isExistingOwner(resource.data.ownerId) 
-                      && request.resource.data.ownerId == resource.data.ownerId
-                      && request.resource.data.itineraryId == resource.data.itineraryId;
-
-        allow delete: if isExistingOwner(resource.data.ownerId);
+      match /dayPlanActivities/{dayPlanActivityId} {
+        allow get, list: if isOwner(userId);
+        
+        // Enforce that the document's internal dayPlanId matches the path it's created in
+        allow create: if isOwner(userId) && request.resource.data.dayPlanId == dayPlanId;
+        
+        // Ensure the dayPlanId cannot be changed (immutability for relational integrity)
+        allow update: if isExistingOwner(userId) && request.resource.data.dayPlanId == resource.data.dayPlanId;
+        
+        allow delete: if isExistingOwner(userId);
       }
+    }
+
+    /**
+     * @description Root user document match (if required for profile creation).
+     * @path /users/{userId}
+     * @allow create if the auth UID matches the document ID.
+     * @principle Standard Self-Creation pattern for user profiles.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Users cannot be listed/discovered.
+      allow create: if isOwner(userId);
+      allow update, delete: if isExistingOwner(userId);
     }
   }
 }
