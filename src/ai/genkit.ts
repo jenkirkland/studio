@@ -3,7 +3,7 @@ import {googleAI} from '@genkit-ai/google-genai';
 
 /**
  * Genkit instance configured for the Boston Merrimack Wanderer app.
- * Using Gemini 1.5 Pro for high-tier reasoning and reliability.
+ * Using the latest Gemini 3.0 Flash Preview for high-speed, high-quality reasoning.
  * It uses the GEMINI_API_KEY from environment variables for local/production stability.
  */
 export const ai = genkit({
@@ -12,5 +12,5 @@ export const ai = genkit({
       apiKey: process.env.GEMINI_API_KEY || 'AIzaSyCD2fBooXpBz-HrQedAVwaRlJR1ytugCnA'
     })
   ],
-  model: 'googleai/gemini-1.5-pro',
+  model: 'googleai/gemini-3.0-flash-preview',
 });
