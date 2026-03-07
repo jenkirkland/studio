@@ -15,8 +15,8 @@ export function OptimizeItinerary() {
   const handleOptimize = async () => {
     if (!activeDay || activeDay.activities.length === 0) {
       toast({
-        title: "Nothing to optimize",
-        description: "Add some activities to your plan first!",
+        title: "No activities to group",
+        description: "Add some experiences to your day first!",
         variant: "destructive"
       });
       return;
@@ -35,12 +35,16 @@ export function OptimizeItinerary() {
         startHour: startHour
       });
 
+      if (!result?.itinerary) {
+        throw new Error("Invalid AI response");
+      }
+
       const optimizedActivities: PlannedActivity[] = result.itinerary.map(item => {
         const existing = activeDay.activities.find(a => a.id === item.id);
         return {
           id: item.id || `meal-${Date.now()}-${Math.random()}`,
           name: item.name,
-          description: item.reason || (existing?.description || ""),
+          description: item.reason || (existing?.description || "A recommended stop for your day."),
           type: item.type === 'meal' ? 'food' : (existing?.type || 'sightseeing'),
           durationMinutes: item.durationMinutes,
           address: existing?.address || item.name,
@@ -55,13 +59,13 @@ export function OptimizeItinerary() {
       setDayActivities(activeDayId, optimizedActivities);
       toast({
         title: "Itinerary Optimized!",
-        description: "We've reordered your day, calculated travel times, and added breaks.",
+        description: "We've reordered your stops and calculated travel times.",
       });
     } catch (err) {
       console.error(err);
       toast({
-        title: "Optimization Failed",
-        description: "Sorry, we couldn't finalize the order right now.",
+        title: "AI Service Unavailable",
+        description: "Please ensure your Google AI API key is correctly configured in your environment.",
         variant: "destructive"
       });
     } finally {

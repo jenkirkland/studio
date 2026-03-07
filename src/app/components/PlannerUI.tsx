@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Map, Sparkles, Navigation, Info, Plus, Search, ListTodo, Trash2, Clock, LayoutDashboard, Settings2, Wand2, Utensils, Loader2 } from "lucide-react";
+import { Map, Sparkles, Navigation, Info, Plus, Search, ListTodo, Trash2, Clock, LayoutDashboard, Settings2, Utensils, Loader2 } from "lucide-react";
 import { DiscoveryTable } from "./DiscoveryTable";
 import { AIRecommendations } from "./AIRecommendations";
 import { OptimizeItinerary } from "./OptimizeItinerary";
@@ -55,15 +55,13 @@ export function PlannerUI() {
       const result = await suggestNearbyFood({
         activities: activeDay.activities.map(a => ({ name: a.name, address: a.address }))
       });
-      // For simplicity, we just toast the first suggestion for now or could show a dialog
-      // In a real app, we'd add these to a special "Suggested Food" section
       toast({
         title: "Food Suggestions Ready!",
         description: `Try ${result.suggestions[0].name}: ${result.suggestions[0].reason}`,
       });
     } catch (err) {
       console.error(err);
-      toast({ title: "Food Search Failed", variant: "destructive" });
+      toast({ title: "AI Search Unavailable", description: "Ensure your API key is configured.", variant: "destructive" });
     } finally {
       setLoadingFood(false);
     }
@@ -83,7 +81,7 @@ export function PlannerUI() {
   return (
     <Tabs defaultValue="discover" className="w-full">
       <div className="flex items-center justify-center mb-8">
-        <TabsList className="grid w-full max-md:max-w-xs max-w-md grid-cols-2 bg-muted p-1 border shadow-sm rounded-xl">
+        <TabsList className="grid w-full max-w-md grid-cols-2 bg-muted p-1 border shadow-sm rounded-xl">
           <TabsTrigger value="discover" className="flex items-center gap-2 rounded-lg py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">
             <Search className="h-4 w-4" /> Discovery Library
           </TabsTrigger>
@@ -96,35 +94,35 @@ export function PlannerUI() {
       <TabsContent value="discover" className="animate-in fade-in duration-300">
         <div className="bg-white rounded-2xl p-6 border shadow-lg">
           <div className="mb-6">
-            <h2 className="text-2xl font-black text-foreground mb-1">Activity Library</h2>
-            <p className="text-muted-foreground text-sm">Star the activities you're interested in, then head to the Plan tab to build your itinerary.</p>
+            <h2 className="text-2xl font-black text-foreground mb-1">Explore Experiences</h2>
+            <p className="text-muted-foreground text-sm">Star the activities you love. We'll help you group them into a perfect multi-day trip in the next tab.</p>
           </div>
           <DiscoveryTable />
         </div>
       </TabsContent>
 
       <TabsContent value="plan" className="animate-in fade-in duration-300">
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
-          {/* Left Column: Shortlist & Config - Sticky on Desktop */}
-          <div className="w-full lg:w-96 flex flex-col gap-6 lg:sticky lg:top-8">
-            {/* Trip Config */}
+        <div className="flex flex-col md:flex-row gap-8 items-start">
+          {/* Left Column: Shortlist & Config */}
+          <div className="w-full md:w-80 lg:w-96 flex flex-col gap-6 md:sticky md:top-8">
             <div className="bg-white p-5 rounded-2xl border border-primary/20 shadow-sm space-y-4">
               <div className="flex items-center gap-2 text-primary">
                 <Settings2 className="w-4 h-4" />
-                <h3 className="text-sm font-black uppercase tracking-wider">Trip Settings</h3>
+                <h3 className="text-sm font-black uppercase tracking-wider">Trip Setup</h3>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase font-bold text-muted-foreground">Days</Label>
+                  <Label className="text-[10px] uppercase font-bold text-muted-foreground">Trip Duration (Days)</Label>
                   <Input 
                     type="number" 
                     value={tripDuration} 
                     onChange={(e) => setTripDuration(parseInt(e.target.value) || 1)}
                     className="h-9 text-xs font-bold"
+                    min={1}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] uppercase font-bold text-muted-foreground">Start Time (24h)</Label>
+                  <Label className="text-[10px] uppercase font-bold text-muted-foreground">Start Time (0-23)</Label>
                   <Input 
                     type="number" 
                     value={startHour} 
@@ -135,11 +133,11 @@ export function PlannerUI() {
                   />
                 </div>
                 <div className="space-y-1.5 col-span-2">
-                  <Label className="text-[10px] uppercase font-bold text-muted-foreground">Max Hours/Day</Label>
+                  <Label className="text-[10px] uppercase font-bold text-muted-foreground">Max Activity Hours/Day</Label>
                   <Input 
                     type="number" 
                     value={dailyActiveHours} 
-                    onChange={(e) => setDailyActiveHours(parseInt(e.target.value) || 1)}
+                    onChange={(e) => setDailyActiveHours(parseInt(e.target.value) || 8)}
                     className="h-9 text-xs font-bold"
                   />
                 </div>
@@ -147,31 +145,31 @@ export function PlannerUI() {
               <Button 
                 onClick={distributeShortlistIntoDays}
                 disabled={shortlist.length === 0}
-                className="w-full bg-accent hover:bg-accent/90 text-white font-black text-xs h-9 shadow-md"
+                className="w-full bg-primary hover:bg-primary/90 text-white font-black text-xs h-9 shadow-md"
               >
-                <Wand2 className="w-3.5 h-3.5 mr-2" />
+                <Plus className="w-3.5 h-3.5 mr-2" />
                 Auto-Group Activities
               </Button>
             </div>
 
             <div className="flex items-center justify-between px-1">
               <div>
-                <h3 className="text-lg font-black text-foreground">Interested</h3>
+                <h3 className="text-lg font-black text-foreground">Interested Items</h3>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Your Shortlist</p>
               </div>
-              <Badge variant="secondary" className="px-2 py-0.5 text-[10px] font-bold">
-                {shortlist.length} Items
+              <Badge variant="secondary" className="px-2 py-0.5 text-[10px] font-bold bg-primary/10 text-primary border-primary/20">
+                {shortlist.length} Starred
               </Badge>
             </div>
             
-            <ScrollArea className="h-[400px] lg:h-[600px] rounded-2xl border bg-secondary/20 p-4">
+            <ScrollArea className="h-[500px] md:h-[600px] rounded-2xl border bg-secondary/20 p-4">
               {shortlist.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center p-6 opacity-60">
-                  <div className="bg-white p-3 rounded-full mb-3 shadow-sm border">
+                  <div className="bg-white p-3 rounded-full mb-3 shadow-sm border border-primary/10">
                     <Search className="w-6 h-6 text-primary/40" />
                   </div>
-                  <p className="font-bold text-sm mb-1">Star some experiences!</p>
-                  <p className="text-[11px]">Go to 'Discovery Library' and star activities to see them here.</p>
+                  <p className="font-bold text-sm mb-1 text-primary/60">Your list is empty</p>
+                  <p className="text-[11px]">Go to 'Discovery Library' and star activities to plan your trip.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -190,9 +188,8 @@ export function PlannerUI() {
 
           {/* Right Column: Main Planning Area */}
           <div className="flex-1 w-full flex flex-col gap-6">
-            {/* Toolbar */}
             <div className="bg-white p-4 rounded-2xl border shadow-sm flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide max-w-full">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 {days.map((day) => (
                   <div key={day.id} className="flex items-center group relative">
                     <Button
@@ -252,7 +249,7 @@ export function PlannerUI() {
                 >
                   <a href={generateGoogleMapsLink()} target="_blank" rel="noopener noreferrer">
                     <Map className="w-3.5 h-3.5 mr-1.5" />
-                    Map
+                    Map Route
                   </a>
                 </Button>
               </div>
@@ -264,7 +261,6 @@ export function PlannerUI() {
               </div>
             )}
 
-            {/* Itinerary Area */}
             <div className="bg-white rounded-3xl border shadow-xl p-6 md:p-8 min-h-[600px] flex flex-col relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/10" />
               
@@ -273,8 +269,8 @@ export function PlannerUI() {
                   <LayoutDashboard className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-foreground">{activeDay.name} Final Plan</h2>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">Day Itinerary</p>
+                  <h2 className="text-2xl font-black text-foreground">{activeDay.name} Schedule</h2>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">Timeline Viewer</p>
                 </div>
               </div>
 
@@ -283,9 +279,9 @@ export function PlannerUI() {
                   <div className="w-24 h-24 bg-primary/5 rounded-full flex items-center justify-center mb-6 border border-primary/10">
                     <Navigation className="w-10 h-10 text-primary opacity-20" />
                   </div>
-                  <h3 className="font-bold text-xl text-foreground mb-3">Plan is empty</h3>
+                  <h3 className="font-bold text-xl text-foreground mb-3">No activities yet</h3>
                   <p className="max-w-xs text-xs text-muted-foreground leading-relaxed">
-                    Add activities from your shortlisted items on the left or use the Auto-Group feature to fill your days automatically.
+                    Drag or add activities from your starred list on the left to start building your day.
                   </p>
                 </div>
               ) : (
@@ -294,22 +290,19 @@ export function PlannerUI() {
                     <div className="space-y-12 pb-10">
                       {activeDay.activities.map((activity, index) => (
                         <div key={activity.id} className="relative group pl-12">
-                          {/* Travel Marker Above */}
                           {activity.travelTimeFromPrev && (
                              <div className="absolute -top-8 left-0 pl-14 flex items-center gap-2">
                                <div className="h-0.5 w-4 bg-accent/30" />
                                <span className="text-[9px] font-black uppercase text-accent bg-accent/5 px-2 py-0.5 rounded-full border border-accent/10 whitespace-nowrap">
-                                 Travel: ~{activity.travelTimeFromPrev} min
+                                 Est. Travel: {activity.travelTimeFromPrev} min
                                </span>
                              </div>
                           )}
 
-                          {/* Progress Line */}
                           {index < activeDay.activities.length - 1 && (
                             <div className="absolute top-10 left-[1.375rem] w-0.5 h-[calc(100%+3rem)] bg-gradient-to-b from-primary/30 to-transparent" />
                           )}
                           
-                          {/* Timeline Marker */}
                           <div className="absolute left-0 top-0 flex flex-col items-center">
                             <div className={cn(
                               "w-11 h-11 rounded-full border-2 flex items-center justify-center font-black text-sm bg-white shadow-sm z-10 transition-transform group-hover:scale-110",
@@ -324,7 +317,7 @@ export function PlannerUI() {
                                 </span>
                                 {activity.endTime && (
                                   <span className="text-[8px] font-bold text-muted-foreground">
-                                    to {activity.endTime}
+                                    - {activity.endTime}
                                   </span>
                                 )}
                               </div>
@@ -344,25 +337,24 @@ export function PlannerUI() {
                     </div>
                   </ScrollArea>
 
-                  {/* Summary Footer */}
                   <div className="mt-8 pt-8 border-t flex flex-wrap gap-10 items-center justify-between">
                     <div className="flex gap-10">
                       <div>
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">Active Time</p>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">Planned Time</p>
                         <p className="text-3xl font-black text-primary">
                           {Math.floor(totalDuration / 60)}h <span className="text-base font-bold">{totalDuration % 60}m</span>
                         </p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">Travel Est.</p>
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">Travel Time</p>
                         <p className="text-3xl font-black text-accent">
                           ~{totalTravelTime} <span className="text-base font-bold">min</span>
                         </p>
                       </div>
                     </div>
-                    <div className="hidden md:flex items-center gap-3 text-[11px] text-muted-foreground bg-primary/5 px-5 py-3 rounded-2xl border border-primary/10 max-w-sm">
+                    <div className="hidden lg:flex items-center gap-3 text-[11px] text-muted-foreground bg-primary/5 px-5 py-3 rounded-2xl border border-primary/10 max-w-sm">
                       <Info className="w-4 h-4 text-primary shrink-0" />
-                      <span>Use "Food Nearby" to see top-rated eats specifically along your current route between stops.</span>
+                      <span>Use "Food Nearby" to discover top-rated stops situated logically between your currently planned activities.</span>
                     </div>
                   </div>
                 </>
