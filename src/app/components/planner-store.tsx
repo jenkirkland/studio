@@ -1,10 +1,12 @@
 "use client"
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Activity, ACTIVITIES } from '@/app/lib/activities';
 
 export interface PlannedActivity extends Activity {
   isOptional: boolean;
+  scheduledTime?: string;
+  isMeal?: boolean;
 }
 
 export interface DayPlan {
@@ -22,6 +24,7 @@ interface PlannerContextType {
   removeFromShortlist: (id: string) => void;
   addActivityToDay: (activity: Activity, dayId: string) => void;
   removeActivityFromDay: (activityId: string, dayId: string) => void;
+  setDayActivities: (dayId: string, activities: PlannedActivity[]) => void;
   toggleOptional: (activityId: string, dayId: string) => void;
   addDay: () => void;
   removeDay: (id: string) => void;
@@ -60,7 +63,6 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       }
       return day;
     }));
-    // Remove from shortlist if it was there
     setShortlist(prev => prev.filter(a => a.id !== activity.id));
   }, []);
 
@@ -68,14 +70,17 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
     setDays(prev => prev.map(day => {
       if (day.id === dayId) {
         const removed = day.activities.find(a => a.id === activityId);
-        if (removed) {
-          // Return to shortlist
+        if (removed && !removed.isMeal) {
           setShortlist(s => [...s, removed]);
         }
         return { ...day, activities: day.activities.filter(a => a.id !== activityId) };
       }
       return day;
     }));
+  }, []);
+
+  const setDayActivities = useCallback((dayId: string, activities: PlannedActivity[]) => {
+    setDays(prev => prev.map(day => day.id === dayId ? { ...day, activities } : day));
   }, []);
 
   const toggleOptional = useCallback((activityId: string, dayId: string) => {
@@ -104,8 +109,7 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       if (prev.length <= 1) return prev;
       const dayToRemove = prev.find(d => d.id === id);
       if (dayToRemove) {
-        // Return activities to shortlist
-        setShortlist(s => [...s, ...dayToRemove.activities]);
+        setShortlist(s => [...s, ...dayToRemove.activities.filter(a => !a.isMeal)]);
       }
       const filtered = prev.filter(d => d.id !== id);
       if (activeDayId === id) setActiveDayId(filtered[0].id);
@@ -123,6 +127,7 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       removeFromShortlist,
       addActivityToDay,
       removeActivityFromDay,
+      setDayActivities,
       toggleOptional,
       addDay,
       removeDay,

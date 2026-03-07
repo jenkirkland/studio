@@ -2,9 +2,10 @@ export interface Activity {
   id: string;
   name: string;
   description: string;
-  type: 'nature' | 'food' | 'historical' | 'art' | 'entertainment' | 'shopping';
+  type: 'nature' | 'food' | 'historical' | 'art' | 'entertainment' | 'shopping' | 'sports' | 'culture' | 'science' | 'sightseeing' | 'boat tour' | 'family' | 'nightlife' | 'recreation' | 'beach' | 'coastal town' | 'living museum' | 'maritime' | 'military' | 'architecture' | 'scenic';
   durationMinutes: number;
   address: string;
+  typicalHours?: string;
   googleMapsUrl?: string;
 }
 
@@ -16,6 +17,7 @@ export const ACTIVITIES: Activity[] = [
     type: 'nature',
     durationMinutes: 60,
     address: '139 Tremont St, Boston, MA 02111',
+    typicalHours: '6:00 AM - 11:30 PM'
   },
   {
     id: 'freedom-trail',
@@ -24,6 +26,7 @@ export const ACTIVITIES: Activity[] = [
     type: 'historical',
     durationMinutes: 180,
     address: 'Boston, MA',
+    typicalHours: 'Always Open (Walking Route)'
   },
   {
     id: 'north-end',
@@ -32,6 +35,7 @@ export const ACTIVITIES: Activity[] = [
     type: 'food',
     durationMinutes: 120,
     address: 'Hanover St, Boston, MA 02113',
+    typicalHours: 'Vibrant 10:00 AM - 11:00 PM'
   },
   {
     id: 'newbury-street',
@@ -40,6 +44,7 @@ export const ACTIVITIES: Activity[] = [
     type: 'shopping',
     durationMinutes: 120,
     address: 'Newbury St, Boston, MA 02116',
+    typicalHours: '10:00 AM - 8:00 PM'
   },
   {
     id: 'quincy-market',
@@ -48,14 +53,16 @@ export const ACTIVITIES: Activity[] = [
     type: 'food',
     durationMinutes: 60,
     address: '4 S Market St, Boston, MA 02109',
+    typicalHours: '10:00 AM - 9:00 PM'
   },
   {
     id: 'fenway-park',
     name: 'Fenway Park (Red Sox)',
     description: 'A classic Boston sports outing. Best if you want an event-centered afternoon or evening.',
-    type: 'entertainment',
+    type: 'sports',
     durationMinutes: 210,
     address: '4 Jersey St, Boston, MA 02215',
+    typicalHours: 'Varies by Game/Tour'
   },
   {
     id: 'south-end',
@@ -64,6 +71,7 @@ export const ACTIVITIES: Activity[] = [
     type: 'food',
     durationMinutes: 120,
     address: 'Tremont St, Boston, MA 02118',
+    typicalHours: 'Vibrant 11:00 AM - 10:00 PM'
   },
   {
     id: 'charles-river-esplanade',
@@ -72,6 +80,7 @@ export const ACTIVITIES: Activity[] = [
     type: 'nature',
     durationMinutes: 90,
     address: 'Charles River Esplanade, Boston, MA 02116',
+    typicalHours: 'Dawn - Dusk'
   },
   {
     id: 'whale-watching',
@@ -80,6 +89,7 @@ export const ACTIVITIES: Activity[] = [
     type: 'nature',
     durationMinutes: 240,
     address: '1 Long Wharf, Boston, MA 02110',
+    typicalHours: 'Seasonal, Departs 10:00 AM / 1:00 PM'
   },
   {
     id: 'tea-party-museum',
@@ -88,22 +98,25 @@ export const ACTIVITIES: Activity[] = [
     type: 'historical',
     durationMinutes: 90,
     address: '306 Congress St, Boston, MA 02210',
+    typicalHours: '10:00 AM - 5:00 PM'
   },
   {
     id: 'hong-kong-karaoke',
     name: 'Hong Kong Karaoke',
     description: 'A casual, iconic karaoke bar. Best for a looser night with food and bars nearby.',
-    type: 'food',
+    type: 'nightlife',
     durationMinutes: 120,
     address: '1 Faneuil Hall Square, Boston, MA 02109',
+    typicalHours: '11:00 AM - 2:00 AM'
   },
   {
     id: 'aquarium',
     name: 'New England Aquarium',
     description: 'An easy family-friendly or rainy-day stop right on the waterfront.',
-    type: 'nature',
+    type: 'family',
     durationMinutes: 150,
     address: '1 Central Wharf, Boston, MA 02110',
+    typicalHours: '9:00 AM - 5:00 PM'
   },
   {
     id: 'mfa',
@@ -112,14 +125,16 @@ export const ACTIVITIES: Activity[] = [
     type: 'art',
     durationMinutes: 180,
     address: '465 Huntington Ave, Boston, MA 02115',
+    typicalHours: '10:00 AM - 5:00 PM (Thurs/Fri till 10 PM)'
   },
   {
     id: 'duck-tours',
     name: 'Boston Duck Tours',
     description: 'A classic first-timer overview of the city with a fun, touristy feel.',
-    type: 'entertainment',
+    type: 'sightseeing',
     durationMinutes: 80,
     address: '4 Copley Pl, Boston, MA 02116',
+    typicalHours: '9:00 AM - Sunset'
   },
   {
     id: 'gardner-museum',
@@ -128,6 +143,7 @@ export const ACTIVITIES: Activity[] = [
     type: 'art',
     durationMinutes: 120,
     address: '25 Evans Way, Boston, MA 02115',
+    typicalHours: '11:00 AM - 5:00 PM (Tues Closed)'
   },
   {
     id: 'ica-boston',
@@ -136,6 +152,7 @@ export const ACTIVITIES: Activity[] = [
     type: 'art',
     durationMinutes: 90,
     address: '25 Harbor Shore Dr, Boston, MA 02210',
+    typicalHours: '10:00 AM - 5:00 PM'
   },
   {
     id: 'blue-hills',
@@ -144,6 +161,7 @@ export const ACTIVITIES: Activity[] = [
     type: 'nature',
     durationMinutes: 150,
     address: '695 Hillside St, Milton, MA 02186',
+    typicalHours: 'Dawn - Dusk'
   },
   {
     id: 'salem',
@@ -152,6 +170,7 @@ export const ACTIVITIES: Activity[] = [
     type: 'historical',
     durationMinutes: 240,
     address: 'Salem, MA',
+    typicalHours: 'Best 10:00 AM - 6:00 PM'
   },
   {
     id: 'rockport',
@@ -160,6 +179,7 @@ export const ACTIVITIES: Activity[] = [
     type: 'shopping',
     durationMinutes: 150,
     address: 'Bearskin Neck, Rockport, MA 01966',
+    typicalHours: '10:00 AM - 5:30 PM'
   },
   {
     id: 'tree-house-tewksbury',
@@ -168,6 +188,7 @@ export const ACTIVITIES: Activity[] = [
     type: 'food',
     durationMinutes: 120,
     address: '1880 Main St, Tewksbury, MA 01876',
+    typicalHours: '11:00 AM - 9:00 PM'
   },
   {
     id: 'minuteman-park',
@@ -176,6 +197,7 @@ export const ACTIVITIES: Activity[] = [
     type: 'historical',
     durationMinutes: 120,
     address: '250 N Great Rd, Lincoln, MA 01773',
+    typicalHours: '9:00 AM - 5:00 PM'
   },
   {
     id: 'walden-pond',
@@ -184,5 +206,6 @@ export const ACTIVITIES: Activity[] = [
     type: 'nature',
     durationMinutes: 90,
     address: '915 Walden St, Concord, MA 01742',
+    typicalHours: '8:00 AM - Sunset'
   }
 ];
