@@ -25,7 +25,8 @@ import {
   MessageSquare,
   Plane,
   TrainFront,
-  Car
+  Car,
+  Share2
 } from "lucide-react";
 import { DiscoveryTable } from "./DiscoveryTable";
 import { AIRecommendations } from "./AIRecommendations";
@@ -241,6 +242,15 @@ export function PlannerUI() {
     return destinations ? `https://www.google.com/maps/dir/${origin}/${destinations}/${destination}` : `https://www.google.com/maps/dir/${origin}/${destination}`;
   };
 
+  const handleShareToPhone = () => {
+    const link = generateGoogleMapsLink();
+    navigator.clipboard.writeText(link);
+    toast({
+      title: "Route Copied!",
+      description: "Paste this link into your phone's browser or Google Maps app to start navigating.",
+    });
+  };
+
   const transitIcons = {
     airport: <Plane className="w-3.5 h-3.5" />,
     train: <TrainFront className="w-3.5 h-3.5" />,
@@ -261,7 +271,7 @@ export function PlannerUI() {
   return (
     <Tabs defaultValue="discover" className="w-full">
       <div className="flex items-center justify-center mb-10">
-        <TabsList className="grid w-full max-w-lg grid-cols-2 bg-muted h-12 rounded-2xl p-1 shadow-sm border">
+        <TabsList className="grid w-full max-w-lg grid-cols-2 bg-muted h-12 rounded-2xl p-1 shadow-sm border border-primary/10">
           <TabsTrigger value="discover" className="rounded-xl font-black text-sm uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary">
             <Search className="h-4 w-4 mr-2" /> 1. Discover
           </TabsTrigger>
@@ -271,8 +281,8 @@ export function PlannerUI() {
         </TabsList>
       </div>
 
-      <TabsContent value="discover">
-        <div className="bg-white rounded-3xl p-8 border shadow-xl border-primary/5">
+      <TabsContent value="discover" className="mt-0 outline-none">
+        <div className="bg-white rounded-[40px] p-8 border shadow-xl border-primary/5">
           <div className="mb-8">
             <h2 className="text-3xl font-black text-foreground mb-2">Experience Library</h2>
             <p className="text-muted-foreground">Star items to build your wishlist for the itinerary. We'll group them for you later.</p>
@@ -281,10 +291,10 @@ export function PlannerUI() {
         </div>
       </TabsContent>
 
-      <TabsContent value="plan">
+      <TabsContent value="plan" className="mt-0 outline-none">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           <div className="w-full lg:w-[380px] flex flex-col gap-6 lg:sticky lg:top-8">
-            <div className="bg-white p-6 rounded-3xl border border-primary/10 shadow-lg space-y-6">
+            <div className="bg-white p-6 rounded-[32px] border border-primary/10 shadow-lg space-y-6">
               <div className="flex items-center gap-3 text-primary">
                 <Settings2 className="w-5 h-5" />
                 <h3 className="text-xs font-black uppercase tracking-widest">Trip Configuration</h3>
@@ -405,7 +415,7 @@ export function PlannerUI() {
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-3xl border shadow-md">
+            <div className="bg-white p-5 rounded-[32px] border border-primary/10 shadow-md">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[11px] font-black text-foreground uppercase tracking-widest">Wishlist ({shortlist.length})</h3>
                 {shortlist.length > 0 && <Badge variant="secondary" className="text-[9px] font-bold">Unplanned</Badge>}
@@ -433,10 +443,8 @@ export function PlannerUI() {
           </div>
 
           <div className="flex-1 w-full space-y-6">
-            <AIRecommendations />
-            
-            <div className="bg-white p-4 rounded-3xl border shadow-md flex items-center justify-between gap-4 flex-wrap">
-              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+            <div className="bg-white p-4 rounded-[32px] border border-primary/10 shadow-md flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
                 {days.map((day) => (
                   <Button
                     key={day.id}
@@ -453,17 +461,23 @@ export function PlannerUI() {
                 ))}
               </div>
               <div className="flex items-center gap-2">
+                <AIRecommendations />
                 <OptimizeItinerary />
                 <Button variant="outline" size="sm" onClick={handleSuggestFood} disabled={loadingFood} className="h-8 text-[10px] font-black uppercase text-primary border-primary/20 hover:bg-primary/5">
                   <Utensils className="w-3 h-3 mr-1" /> Food Nearby
                 </Button>
-                <Button size="sm" asChild className="bg-accent text-white h-8 text-[10px] font-black uppercase hover:bg-accent/90">
-                  <a href={generateGoogleMapsLink()} target="_blank" rel="noopener noreferrer"><Map className="w-3 h-3 mr-1" /> Route</a>
-                </Button>
+                <div className="flex items-center gap-1 bg-accent/10 p-1 rounded-xl">
+                  <Button size="sm" variant="ghost" asChild className="text-accent h-7 text-[9px] font-black uppercase hover:bg-white px-2">
+                    <a href={generateGoogleMapsLink()} target="_blank" rel="noopener noreferrer"><Map className="w-3 h-3 mr-1" /> Route</a>
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={handleShareToPhone} className="text-accent h-7 text-[9px] font-black uppercase hover:bg-white px-2">
+                    <Share2 className="w-3 h-3 mr-1" /> Send to Phone
+                  </Button>
+                </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-[40px] border shadow-xl p-8 min-h-[600px] relative">
+            <div className="bg-white rounded-[40px] border border-primary/10 shadow-xl p-8 min-h-[600px] relative">
               <div className="flex items-center justify-between mb-10">
                 <div>
                   <h2 className="text-2xl font-black text-foreground tracking-tight">{activeDay.name} Timeline</h2>
