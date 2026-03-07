@@ -1,7 +1,7 @@
-
 'use server';
 /**
- * @fileOverview A Genkit flow that optimizes activities for a day, respecting arrival/departure times and locations.
+ * @fileOverview A consolidated Genkit flow that optimizes an entire multi-day trip.
+ * It distributes wishlist items across days and sequences them based on logistics.
  */
 
 import {ai} from '@/ai/genkit';
@@ -16,12 +16,21 @@ const ActivitySchema = z.object({
   fixedStartTime: z.string().optional().describe('Format: HH:MM AM/PM'),
 });
 
-const OptimizeInputSchema = z.object({
+const DayInputSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  date: z.string(),
   activities: z.array(ActivitySchema),
-  startHour: z.number().default(9),
-  endHour: z.number().optional().describe('The hour the day must end by (e.g., departure time).'),
-  startLocation: z.string().optional().default('Tewksbury, MA'),
-  endLocation: z.string().optional().default('Tewksbury, MA'),
+  startLocation: z.string(),
+  endLocation: z.string(),
+  startHour: z.number().optional(),
+  endHour: z.number().optional(),
+});
+
+const OptimizeFullTripInputSchema = z.object({
+  days: z.array(DayInputSchema),
+  wishlist: z.array(ActivitySchema),
+  dailyActiveHours: z.number().default(8),
 });
 
 const OptimizedItemSchema = z.object({
@@ -36,44 +45,62 @@ const OptimizedItemSchema = z.object({
   isFixed: z.boolean().optional(),
 });
 
-const OptimizeOutputSchema = z.object({
-  itinerary: z.array(OptimizedItemSchema),
-  totalDurationMinutes: z.number(),
+const OptimizedDaySchema = z.object({
+  id: z.string(),
+  activities: z.array(OptimizedItemSchema),
 });
 
-export type OptimizeInput = z.infer<typeof OptimizeInputSchema>;
-export type OptimizeOutput = z.infer<typeof OptimizeOutputSchema>;
+const OptimizeFullTripOutputSchema = z.object({
+  optimizedDays: z.array(OptimizedDaySchema),
+  remainingWishlistIds: z.array(z.string()),
+  explanation: z.string().describe('Explain the distribution logic.'),
+});
 
-export async function optimizeItinerary(input: OptimizeInput): Promise<OptimizeOutput> {
+export type OptimizeFullTripInput = z.infer<typeof OptimizeFullTripInputSchema>;
+export type OptimizeFullTripOutput = z.infer<typeof OptimizeFullTripOutputSchema>;
+
+export async function optimizeFullTrip(input: OptimizeFullTripInput): Promise<OptimizeFullTripOutput> {
   return optimizeFlow(input);
 }
 
 const optimizePrompt = ai.definePrompt({
-  name: 'optimizePrompt',
-  input: { schema: OptimizeInputSchema },
-  output: { schema: OptimizeOutputSchema },
-  prompt: `You are an expert travel logistics planner.
-User starts today at: {{{startLocation}}} at {{{startHour}}}:00.
-{{#if endHour}}The day must end by: {{{endHour}}}:00 at {{{endLocation}}}.{{else}}The day ends at: {{{endLocation}}}.{{/if}}
+  name: 'optimizeFullTripPrompt',
+  input: { schema: OptimizeFullTripInputSchema },
+  output: { schema: OptimizeFullTripOutputSchema },
+  prompt: `You are an expert travel logistics planner for the Boston/Merrimack Valley area.
+Goal: Organize a multi-day trip by distributing wishlist items and sequencing everything.
 
-Activities to schedule:
-{{#each activities}}
-- {{{name}}} ({{{durationMinutes}}} mins) {{#if fixedStartTime}}[FIXED AT {{{fixedStartTime}}}]{{/if}}
+Wishlist (Unscheduled):
+{{#each wishlist}}
+- {{{name}}} ({{{durationMinutes}}} mins, {{{type}}}) at {{{address}}}
+{{/each}}
+
+Current Days & Constraints:
+{{#each days}}
+- Day: {{{name}}} ({{{date}}})
+  Start: {{{startLocation}}} {{#if startHour}}at {{{startHour}}}:00{{/if}}
+  End: {{{endLocation}}} {{#if endHour}}by {{{endHour}}}:00{{/if}}
+  Already Scheduled:
+  {{#each activities}}
+  * {{{name}}} ({{{durationMinutes}}} mins) {{#if fixedStartTime}}[FIXED AT {{{fixedStartTime}}}]{{/if}}
+  {{/each}}
 {{/each}}
 
 Rules:
-1. Reorder activities to minimize travel time starting from {{{startLocation}}}.
-2. Respect FIXED times exactly.
-3. If endHour is provided, ensure the "Return to {{{endLocation}}}" finishes before endHour.
-4. Insert a 60-min lunch if there's a gap around noon.
-5. Always calculate travel time from the previous location (or start location for the first activity).`,
+1. Max activity time per day: {{{dailyActiveHours}}} hours.
+2. Distribute wishlist items into the days where they fit best geographically and temporally.
+3. Sequence activities to minimize travel.
+4. Respect FIXED times exactly.
+5. Insert 60-min Lunch gaps around noon if a day has enough activities.
+6. Calculate travel time from the previous location.
+7. If an item doesn't fit anywhere, keep its ID in remainingWishlistIds.`,
 });
 
 const optimizeFlow = ai.defineFlow(
   {
-    name: 'optimizeFlow',
-    inputSchema: OptimizeInputSchema,
-    outputSchema: OptimizeOutputSchema,
+    name: 'optimizeFullTripFlow',
+    inputSchema: OptimizeFullTripInputSchema,
+    outputSchema: OptimizeFullTripOutputSchema,
   },
   async (input) => {
     const { output } = await optimizePrompt(input);

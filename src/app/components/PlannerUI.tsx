@@ -1,4 +1,3 @@
-
 "use client"
 
 import { usePlanner, PlannedActivity, DayPlan, TransitMethod } from "./planner-store";
@@ -26,19 +25,20 @@ import {
   TrainFront,
   Car,
   Share2,
-  CloudUpload
+  CloudUpload,
+  Wand2
 } from "lucide-react";
 import { DiscoveryTable } from "./DiscoveryTable";
 import { AIRecommendations } from "./AIRecommendations";
-import { OptimizeItinerary } from "./OptimizeItinerary";
 import { CustomActivityDialog } from "./CustomActivityDialog";
 import { MealRecommendation } from "./MealRecommendation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { optimizeItinerary } from "@/ai/flows/optimize-itinerary-flow";
+import { optimizeFullTrip } from "@/ai/flows/optimize-itinerary-flow";
 import { refineItineraryChat } from "@/ai/flows/refine-itinerary-chat-flow";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { ACTIVITIES } from "../lib/activities";
 
 export function PlannerUI() {
   const { 
@@ -63,18 +63,94 @@ export function PlannerUI() {
     setDepartureLocation,
     dailyActiveHours,
     setDailyActiveHours,
-    defaultStartHour,
     setDays,
     setShortlist
   } = usePlanner();
   
-  const [isGrouping, setIsGrouping] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [isChatting, setIsChatting] = useState(false);
 
-  // Robust active day lookup to avoid "Initializing" screen hang
   const activeDay = days.find(d => d.id === activeDayId) || days[0];
+
+  const handleGlobalOptimization = async () => {
+    setIsOptimizing(true);
+    try {
+      const result = await optimizeFullTrip({
+        days: days.map(d => ({
+          id: d.id,
+          name: d.name,
+          date: d.date,
+          activities: d.activities.map(a => ({
+            id: a.id,
+            name: a.name,
+            durationMinutes: a.durationMinutes,
+            type: a.type,
+            address: a.address,
+            fixedStartTime: a.fixedStartTime
+          })),
+          startLocation: d.startLocation || "Tewksbury, MA",
+          endLocation: d.endLocation || "Tewksbury, MA",
+          startHour: d.startHourOverride,
+          endHour: d.endHourOverride,
+        })),
+        wishlist: shortlist.map(a => ({
+          id: a.id,
+          name: a.name,
+          durationMinutes: a.durationMinutes,
+          type: a.type,
+          address: a.address
+        })),
+        dailyActiveHours: dailyActiveHours
+      });
+
+      const updatedDays = days.map(d => {
+        const optimizedDay = result.optimizedDays.find(od => od.id === d.id);
+        if (!optimizedDay) return d;
+
+        const activities: PlannedActivity[] = optimizedDay.activities.map(item => {
+          const existing = [...d.activities, ...shortlist].find(a => a.id === item.id);
+          return {
+            id: item.id || `ai-${Date.now()}-${Math.random()}`,
+            name: item.name,
+            description: item.reason || existing?.description || "Recommended stop.",
+            type: item.type === 'meal' ? 'food' : (existing?.type || 'sightseeing'),
+            durationMinutes: item.durationMinutes,
+            address: existing?.address || item.name,
+            scheduledTime: item.startTime,
+            endTime: item.endTime,
+            isOptional: false,
+            isMeal: item.type === 'meal',
+            travelTimeFromPrev: item.travelTimeMinutes,
+            fixedStartTime: existing?.fixedStartTime || (item.isFixed ? item.startTime : undefined)
+          } as PlannedActivity;
+        });
+
+        return { ...d, activities };
+      });
+
+      setDays(updatedDays);
+      setShortlist(ACTIVITIES.filter(a => result.remainingWishlistIds.includes(a.id)));
+      
+      toast({
+        title: "Itinerary Optimized",
+        description: result.explanation || "Your entire trip has been organized and sequenced.",
+      });
+    } catch (err: any) {
+      console.error("Global Optimization Error:", err);
+      const isQuotaError = err.message?.includes('429') || err.message?.includes('RESOURCE_EXHAUSTED');
+      toast({
+        title: isQuotaError ? "AI is Busy" : "Optimization Failed",
+        description: isQuotaError 
+          ? "The AI is at capacity. Please wait about 30 seconds and try again." 
+          : "Something went wrong while building your multi-day plan.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
 
   const handleSaveTrip = async () => {
     setIsSaving(true);
@@ -83,100 +159,9 @@ export function PlannerUI() {
       const code = Math.random().toString(36).substring(2, 7).toUpperCase();
       toast({
         title: "Trip Saved to Cloud!",
-        description: `Access Code: WANDER-${code}. This code stores your reservations and notes.`,
+        description: `Access Code: WANDER-${code}. Your reservations are secure.`,
       });
-    }, 1500);
-  };
-
-  const handleAutoGroupAndOptimize = async () => {
-    if (shortlist.length === 0) {
-      toast({ title: "Wishlist is empty", description: "Star some activities first!", variant: "destructive" });
-      return;
-    }
-    setIsGrouping(true);
-    try {
-      const maxMinutesPerDay = dailyActiveHours * 60;
-      const initialDays = days.map(d => ({ ...d, activities: d.activities.filter(a => !!a.fixedStartTime) }));
-      const items = [...shortlist];
-      
-      let currentDayIdx = 0;
-      while (items.length > 0 && currentDayIdx < initialDays.length) {
-        const activity = items[0];
-        const currentDayTime = initialDays[currentDayIdx].activities.reduce((s, a) => s + a.durationMinutes, 0);
-        
-        if (currentDayTime + activity.durationMinutes + 30 <= maxMinutesPerDay) {
-          initialDays[currentDayIdx].activities.push({ ...activity, isOptional: false } as PlannedActivity);
-          items.shift();
-        } else {
-          currentDayIdx++;
-        }
-      }
-
-      const optimizedDays: DayPlan[] = [];
-      for (const day of initialDays) {
-        if (day.activities.length === 0) {
-          optimizedDays.push(day);
-          continue;
-        }
-
-        try {
-          const result = await optimizeItinerary({
-            activities: day.activities.map(a => ({
-              id: a.id,
-              name: a.name,
-              durationMinutes: a.durationMinutes,
-              type: a.type,
-              address: a.address,
-              fixedStartTime: a.fixedStartTime
-            })),
-            startHour: day.startHourOverride || defaultStartHour,
-            endHour: day.endHourOverride,
-            startLocation: day.startLocation,
-            endLocation: day.endLocation
-          });
-
-          if (result?.itinerary) {
-            const planned: PlannedActivity[] = result.itinerary.map(item => {
-              const existing = day.activities.find(a => a.id === item.id);
-              return {
-                id: item.id || `opt-${Date.now()}-${Math.random()}`,
-                name: item.name,
-                description: item.reason || existing?.description || "Recommended stop.",
-                type: item.type === 'meal' ? 'food' : (existing?.type || 'sightseeing'),
-                durationMinutes: item.durationMinutes,
-                address: existing?.address || item.name,
-                scheduledTime: item.startTime,
-                endTime: item.endTime,
-                isOptional: false,
-                isMeal: item.type === 'meal',
-                travelTimeFromPrev: item.travelTimeMinutes,
-                fixedStartTime: existing?.fixedStartTime || (item.isFixed ? item.startTime : undefined)
-              } as PlannedActivity;
-            });
-            optimizedDays.push({ ...day, activities: planned });
-          } else {
-            optimizedDays.push(day);
-          }
-        } catch (dayErr: any) {
-          console.error("Day Optimization Error:", dayErr);
-          optimizedDays.push(day); // Keep unoptimized if AI fails
-        }
-      }
-
-      setDays(optimizedDays);
-      setShortlist(items);
-      toast({ title: "Itinerary Distributed!", description: "Activities have been grouped and sequenced." });
-    } catch (err: any) {
-      console.error(err);
-      const isQuotaError = err.message?.includes('429') || err.message?.includes('RESOURCE_EXHAUSTED');
-      toast({ 
-        title: isQuotaError ? "AI Limit Reached" : "Auto-Group Failed", 
-        description: isQuotaError ? "Too many requests. Please wait a moment." : "Could not build plan.", 
-        variant: "destructive" 
-      });
-    } finally {
-      setIsGrouping(false);
-    }
+    }, 1200);
   };
 
   const handleChatRefinement = async () => {
@@ -205,7 +190,7 @@ export function PlannerUI() {
         return {
           ...d,
           activities: aiDay.activities.map(a => {
-            const existing = d.activities.find(ex => ex.id === a.id);
+            const existing = d.activities.find(ex => ex.id === a.id) || shortlist.find(ex => ex.id === a.id);
             return {
               ...a,
               id: a.id || `ai-${Date.now()}-${Math.random()}`,
@@ -234,7 +219,7 @@ export function PlannerUI() {
   };
 
   const generateGoogleMapsLink = () => {
-    if (!activeDay || !activeDay.activities || activeDay.activities.length === 0) return "https://www.google.com/maps";
+    if (!activeDay || activeDay.activities.length === 0) return "https://www.google.com/maps";
     const origin = encodeURIComponent(activeDay.startLocation || "Tewksbury,MA");
     const stops = activeDay.activities
       .filter(a => !a.isOptional)
@@ -249,7 +234,7 @@ export function PlannerUI() {
     navigator.clipboard.writeText(link);
     toast({
       title: "Route Copied!",
-      description: "Paste this link into your mobile maps app to start navigating.",
+      description: "Paste this into your mobile browser or maps app.",
     });
   };
 
@@ -274,7 +259,7 @@ export function PlannerUI() {
     return (
       <div className="flex flex-col items-center justify-center p-20 gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground font-bold uppercase tracking-widest">Generating Itinerary...</p>
+        <p className="text-sm text-muted-foreground font-bold uppercase tracking-widest">Building your view...</p>
       </div>
     );
   }
@@ -296,7 +281,7 @@ export function PlannerUI() {
         <div className="bg-white rounded-[40px] p-8 border border-primary/5 shadow-sm">
           <div className="mb-8">
             <h2 className="text-3xl font-black text-foreground mb-2">Experience Library</h2>
-            <p className="text-muted-foreground">Star items to build your wishlist. We'll group them for you in the planning tab.</p>
+            <p className="text-muted-foreground">Star experiences to add them to your wishlist for the planner.</p>
           </div>
           <DiscoveryTable />
         </div>
@@ -381,7 +366,7 @@ export function PlannerUI() {
                 </div>
 
                 <div className="px-1">
-                  <Label className="text-[9px] uppercase font-black text-muted-foreground">Daily Active Limit ({dailyActiveHours}h)</Label>
+                  <Label className="text-[9px] uppercase font-black text-muted-foreground">Daily Activity Limit ({dailyActiveHours}h)</Label>
                   <Input 
                     type="number" 
                     value={dailyActiveHours} 
@@ -393,12 +378,12 @@ export function PlannerUI() {
 
               <div className="pt-2 space-y-3">
                 <Button 
-                  onClick={handleAutoGroupAndOptimize}
-                  disabled={shortlist.length === 0 || isGrouping}
+                  onClick={handleGlobalOptimization}
+                  disabled={isOptimizing}
                   className="w-full bg-primary hover:bg-primary/90 font-black text-[10px] uppercase tracking-widest h-12 rounded-xl shadow-lg"
                 >
-                  {isGrouping ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                  Auto-Group Activities
+                  {isOptimizing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Wand2 className="w-4 h-4 mr-2" />}
+                  Auto-Plan Entire Trip
                 </Button>
                 <CustomActivityDialog />
                 <Button 
@@ -422,7 +407,7 @@ export function PlannerUI() {
                 <div className="space-y-3">
                   {shortlist.length === 0 ? (
                     <div className="text-center py-10 opacity-30">
-                      <p className="text-[10px] font-black uppercase tracking-widest">Star experiences to add them here</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest">Star experiences to add items</p>
                     </div>
                   ) : (
                     shortlist.map(activity => (
@@ -459,7 +444,6 @@ export function PlannerUI() {
               </div>
               <div className="flex items-center gap-2">
                 <AIRecommendations />
-                <OptimizeItinerary />
                 <div className="flex items-center gap-1 bg-accent/5 p-1 rounded-xl border border-accent/10">
                   <Button size="sm" variant="ghost" asChild className="text-accent h-7 text-[9px] font-black uppercase hover:bg-white px-2">
                     <a href={generateGoogleMapsLink()} target="_blank" rel="noopener noreferrer"><Map className="w-3 h-3 mr-1" /> Route</a>
@@ -541,12 +525,12 @@ export function PlannerUI() {
                     <MessageSquare className="w-5 h-5" />
                     <div>
                       <h4 className="text-xs font-black uppercase tracking-widest">Itinerary Assistant</h4>
-                      <p className="text-[10px] text-muted-foreground">Ask for changes or route adjustments.</p>
+                      <p className="text-[10px] text-muted-foreground">Ask for changes or swap days.</p>
                     </div>
                   </div>
                   <div className="flex gap-3">
                     <Input 
-                      placeholder="e.g. 'Move the museum to Day 2' or 'Swap the park for something indoor'" 
+                      placeholder="e.g. 'Move the museum to Day 2' or 'I don't want two boat tours'" 
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
                       className="rounded-2xl bg-white h-14 text-sm px-6 border-primary/10"
