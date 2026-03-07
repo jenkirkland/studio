@@ -1,6 +1,7 @@
 'use server';
 /**
- * @fileOverview A consolidated Genkit flow that optimizes an entire multi-day trip.
+ * @fileOverview A consolidated Genkit flow that optimizes trip itineraries.
+ * Includes both full-trip distribution and single-day sequencing.
  */
 
 import {ai} from '@/ai/genkit';
@@ -55,14 +56,38 @@ const OptimizeFullTripOutputSchema = z.object({
   explanation: z.string().describe('Explain the distribution logic.'),
 });
 
+const OptimizeItineraryInputSchema = z.object({
+  activities: z.array(ActivitySchema),
+  startHour: z.number().default(9),
+  endHour: z.number().optional(),
+  startLocation: z.string(),
+  endLocation: z.string(),
+});
+
+const OptimizeItineraryOutputSchema = z.object({
+  itinerary: z.array(OptimizedItemSchema),
+});
+
 export type OptimizeFullTripInput = z.infer<typeof OptimizeFullTripInputSchema>;
 export type OptimizeFullTripOutput = z.infer<typeof OptimizeFullTripOutputSchema>;
+export type OptimizeItineraryInput = z.infer<typeof OptimizeItineraryInputSchema>;
+export type OptimizeItineraryOutput = z.infer<typeof OptimizeItineraryOutputSchema>;
 
+/**
+ * Optimizes an entire multi-day trip by distributing wishlist items and sequencing everything.
+ */
 export async function optimizeFullTrip(input: OptimizeFullTripInput): Promise<OptimizeFullTripOutput> {
-  return optimizeFlow(input);
+  return optimizeFullTripFlow(input);
 }
 
-const optimizePrompt = ai.definePrompt({
+/**
+ * Optimizes a single day's sequence of activities.
+ */
+export async function optimizeItinerary(input: OptimizeItineraryInput): Promise<OptimizeItineraryOutput> {
+  return optimizeItineraryFlow(input);
+}
+
+const fullTripPrompt = ai.definePrompt({
   name: 'optimizeFullTripPrompt',
   model: 'googleai/gemini-3-flash-preview',
   input: { schema: OptimizeFullTripInputSchema },
@@ -96,14 +121,47 @@ Rules:
 7. If an item doesn't fit anywhere, keep its ID in remainingWishlistIds.`,
 });
 
-const optimizeFlow = ai.defineFlow(
+const singleDayPrompt = ai.definePrompt({
+  name: 'optimizeItineraryPrompt',
+  model: 'googleai/gemini-3-flash-preview',
+  input: { schema: OptimizeItineraryInputSchema },
+  output: { schema: OptimizeItineraryOutputSchema },
+  prompt: `You are an expert travel logistics planner. Sequence these activities for a single day.
+Start Location: {{{startLocation}}} at {{{startHour}}}:00
+End Location: {{{endLocation}}} {{#if endHour}}by {{{endHour}}}:00{{/if}}
+
+Activities:
+{{#each activities}}
+- {{{name}}} ({{{durationMinutes}}} mins) {{#if fixedStartTime}}[FIXED AT {{{fixedStartTime}}}]{{/if}} at {{{address}}}
+{{/each}}
+
+Rules:
+1. Sequence to minimize travel time.
+2. Respect FIXED times exactly.
+3. Insert 60-min Lunch gap around noon if there is time.
+4. Calculate travel time from previous location.`,
+});
+
+const optimizeFullTripFlow = ai.defineFlow(
   {
     name: 'optimizeFullTripFlow',
     inputSchema: OptimizeFullTripInputSchema,
     outputSchema: OptimizeFullTripOutputSchema,
   },
   async (input) => {
-    const { output } = await optimizePrompt(input);
+    const { output } = await fullTripPrompt(input);
+    return output!;
+  }
+);
+
+const optimizeItineraryFlow = ai.defineFlow(
+  {
+    name: 'optimizeItineraryFlow',
+    inputSchema: OptimizeItineraryInputSchema,
+    outputSchema: OptimizeItineraryOutputSchema,
+  },
+  async (input) => {
+    const { output } = await singleDayPrompt(input);
     return output!;
   }
 );

@@ -4,32 +4,27 @@ import { usePlanner, PlannedActivity, TransitMethod } from "./planner-store";
 import { ActivityCard } from "./ActivityCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Map, 
   Search, 
   ListTodo, 
   Clock, 
-  LayoutDashboard, 
   Settings2, 
   Loader2, 
-  Send,
-  MessageSquare,
+  Share2,
+  Wand2,
   Plane,
   TrainFront,
-  Car,
-  Share2,
-  CloudUpload,
-  Wand2
+  Car
 } from "lucide-react";
 import { DiscoveryTable } from "./DiscoveryTable";
 import { AIRecommendations } from "./AIRecommendations";
 import { CustomActivityDialog } from "./CustomActivityDialog";
 import { MealRecommendation } from "./MealRecommendation";
+import { OptimizeItinerary } from "./OptimizeItinerary";
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { optimizeFullTrip } from "@/ai/flows/optimize-itinerary-flow";
@@ -47,19 +42,13 @@ export function PlannerUI() {
     removeActivityFromDay, 
     toggleOptional,
     arrivalDate,
-    departureDate,
     setArrivalDate,
+    departureDate,
     setDepartureDate,
     arrivalMethod,
     setArrivalMethod,
-    arrivalLocation,
     setArrivalLocation,
-    departureMethod,
-    setDepartureMethod,
-    departureLocation,
-    setDepartureLocation,
     dailyActiveHours,
-    setDailyActiveHours,
     setDays,
     setShortlist
   } = usePlanner();
@@ -102,16 +91,23 @@ export function PlannerUI() {
         dailyActiveHours: dailyActiveHours
       });
 
-      if (!result || !result.optimizedDays) throw new Error("AI service returned empty plan.");
+      if (!result || !result.optimizedDays || result.optimizedDays.length === 0) {
+        throw new Error("AI service did not return an updated plan.");
+      }
 
       const updatedDays = days.map(d => {
         const optimizedDay = result.optimizedDays.find(od => od.id === d.id);
         if (!optimizedDay) return d;
 
         const activities: PlannedActivity[] = (optimizedDay.activities || []).map(item => {
-          const existing = [...d.activities, ...shortlist, ...ACTIVITIES].find(a => a.id === item.id || a.name === item.name);
+          // Look for matching activity in existing day, wishlist, or global list
+          const existing = [...d.activities, ...shortlist, ...ACTIVITIES].find(a => 
+            a.id === item.id || 
+            a.name.toLowerCase() === item.name.toLowerCase()
+          );
+
           return {
-            id: item.id || `ai-${Date.now()}-${Math.random()}`,
+            id: item.id || existing?.id || `ai-${Date.now()}-${Math.random()}`,
             name: item.name,
             description: item.reason || existing?.description || "Recommended stop.",
             type: item.type === 'meal' ? 'food' : (existing?.type || 'sightseeing'),
@@ -130,14 +126,18 @@ export function PlannerUI() {
       });
 
       setDays(updatedDays);
-      setShortlist(ACTIVITIES.filter(a => result.remainingWishlistIds?.includes(a.id)));
+      
+      // Only filter the shortlist if we have a valid list of remaining IDs
+      if (Array.isArray(result.remainingWishlistIds)) {
+        setShortlist(shortlist.filter(a => result.remainingWishlistIds.includes(a.id)));
+      }
       
       toast({
         title: "Itinerary Optimized",
         description: result.explanation || "Your entire trip has been organized.",
       });
     } catch (err: any) {
-      console.error(err);
+      console.error("Global Optimization Error:", err);
       const isQuotaError = err.message?.includes('429') || err.message?.includes('RESOURCE_EXHAUSTED');
       toast({
         title: isQuotaError ? "AI is Busy" : "Optimization Failed",
@@ -257,14 +257,18 @@ export function PlannerUI() {
               <h3 className="text-[11px] font-black text-foreground uppercase tracking-widest mb-4">Wishlist</h3>
               <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-3">
-                  {shortlist.map(activity => (
-                    <ActivityCard 
-                      key={activity.id} 
-                      activity={activity} 
-                      actionType="add" 
-                      onAction={() => addActivityToDay(activity, activeDayId)} 
-                    />
-                  ))}
+                  {shortlist.length === 0 ? (
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase text-center py-10 opacity-50">Empty Wishlist</p>
+                  ) : (
+                    shortlist.map(activity => (
+                      <ActivityCard 
+                        key={activity.id} 
+                        activity={activity} 
+                        actionType="add" 
+                        onAction={() => addActivityToDay(activity, activeDayId)} 
+                      />
+                    ))
+                  )}
                 </div>
               </ScrollArea>
             </div>
@@ -287,6 +291,7 @@ export function PlannerUI() {
               </div>
               <div className="flex items-center gap-1 bg-accent/5 p-1 rounded-xl">
                 <AIRecommendations />
+                <OptimizeItinerary />
                 <Button size="sm" variant="ghost" asChild className="text-accent h-7 text-[9px] font-black uppercase px-2">
                   <a href={generateGoogleMapsLink()} target="_blank" rel="noopener noreferrer"><Map className="w-3 h-3 mr-1" /> Route</a>
                 </Button>
