@@ -34,6 +34,7 @@ import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ACTIVITIES } from "../lib/activities";
 import { recalculateTimelineWithTraffic } from "@/lib/calculate-routes";
+import { QRCodeSVG } from "qrcode.react";
 
 export function PlannerUI() {
   const {
@@ -382,11 +383,9 @@ export function PlannerUI() {
                       <div className="bg-white p-4 rounded-3xl border-2 border-dashed border-primary/20 shadow-sm relative overflow-hidden group">
                         <div className="absolute inset-0 bg-primary/5 transition-opacity opacity-0 group-hover:opacity-100" />
                         {activeDay && (
-                          <img
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(generateSharedLink())}`}
-                            alt="Itinerary QR Code"
-                            className="w-52 h-52 relative z-10"
-                          />
+                          <div className="relative z-10 w-52 h-52 flex items-center justify-center">
+                            <QRCodeSVG value={generateSharedLink()} size={200} />
+                          </div>
                         )}
                       </div>
                       <div className="flex items-center space-x-2 w-full bg-muted/20 p-2 rounded-2xl border">

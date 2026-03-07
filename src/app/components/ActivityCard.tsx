@@ -7,15 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Clock, MapPin, Plus, Trash2, CheckCircle2, Utensils, CalendarClock, ExternalLink, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { PlannerContext, PACE_MULTIPLIERS } from "./planner-store";
+import { useContext } from "react";
 
 interface ActivityCardProps {
   activity: Activity & { isOptional?: boolean; isMeal?: boolean; fixedStartTime?: string; notes?: string; website?: string };
   onAction?: () => void;
   onToggleOptional?: () => void;
-  actionType: 'add' | 'remove';
+  actionType: 'add' | 'remove' | 'none';
+  overridePace?: 'breeze' | 'normal' | 'linger';
 }
 
-export function ActivityCard({ activity, onAction, onToggleOptional, actionType }: ActivityCardProps) {
+export function ActivityCard({ activity, onAction, onToggleOptional, actionType, overridePace }: ActivityCardProps) {
   const typeColors: Record<string, string> = {
     nature: "bg-emerald-100 text-emerald-800 border-emerald-200",
     food: "bg-orange-100 text-orange-800 border-orange-200",
@@ -31,6 +34,10 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
 
   const isCustom = activity.id.startsWith('custom-');
 
+  const context = useContext(PlannerContext);
+  const currentPace = overridePace || context?.activityPace || 'normal';
+  const scaledDuration = Math.round(activity.durationMinutes * PACE_MULTIPLIERS[currentPace]);
+
   return (
     <Card className={cn(
       "overflow-hidden transition-all duration-300 border hover:shadow-md w-full",
@@ -45,7 +52,7 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
           </Badge>
           <div className="flex items-center text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
             <Clock className="w-3 h-3 mr-1" />
-            {activity.durationMinutes} min
+            {scaledDuration} min
           </div>
         </div>
         <CardTitle className="text-sm mt-2 leading-tight font-headline font-bold text-foreground flex items-center gap-2">
@@ -62,20 +69,20 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
           <MapPin className="w-3 h-3 mr-1 shrink-0" />
           <span className="truncate">{activity.address}</span>
         </div>
-        
+
         {activity.notes && (
           <div className="mt-3 p-2 bg-accent/10 rounded-xl border border-accent/20 flex gap-2 items-start">
-             <Info className="w-3 h-3 text-accent mt-0.5" />
-             <p className="text-[9px] text-accent font-bold leading-tight uppercase">{activity.notes}</p>
+            <Info className="w-3 h-3 text-accent mt-0.5" />
+            <p className="text-[9px] text-accent font-bold leading-tight uppercase">{activity.notes}</p>
           </div>
         )}
       </CardContent>
       <CardFooter className="p-4 pt-0 flex gap-2 items-center">
         {actionType === 'add' ? (
-          <Button 
-            onClick={onAction} 
-            variant="default" 
-            size="sm" 
+          <Button
+            onClick={onAction}
+            variant="default"
+            size="sm"
             className="w-full bg-primary h-7 text-[11px] font-black uppercase hover:bg-primary/90"
           >
             <Plus className="w-3.5 h-3.5 mr-1" />
@@ -83,26 +90,26 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
           </Button>
         ) : (
           <>
-            <Button 
-              onClick={onAction} 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              onClick={onAction}
+              variant="ghost"
+              size="icon"
               className="text-destructive h-7 w-7 hover:bg-destructive/10 shrink-0"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
-            
+
             {activity.website && (
-               <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg border-accent/20 text-accent" asChild>
-                 <a href={activity.website} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-3 h-3" /></a>
-               </Button>
+              <Button variant="outline" size="icon" className="h-7 w-7 rounded-lg border-accent/20 text-accent" asChild>
+                <a href={activity.website} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-3 h-3" /></a>
+              </Button>
             )}
 
             {!isCustom && !activity.isMeal && (
-              <Button 
-                onClick={onToggleOptional} 
-                variant="outline" 
-                size="sm" 
+              <Button
+                onClick={onToggleOptional}
+                variant="outline"
+                size="sm"
                 className={cn(
                   "flex-1 text-[10px] h-7 font-black uppercase transition-colors",
                   activity.isOptional ? "bg-accent/10 border-accent text-accent" : "hover:border-accent"

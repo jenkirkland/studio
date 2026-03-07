@@ -30,6 +30,13 @@ export interface DayPlan {
 }
 
 export type TransitMethod = 'airport' | 'train' | 'car';
+export type ActivityPace = 'breeze' | 'normal' | 'linger';
+
+export const PACE_MULTIPLIERS: Record<ActivityPace, number> = {
+  breeze: 0.75,
+  normal: 1.0,
+  linger: 1.5
+};
 
 interface PlannerContextType {
   shortlist: Activity[];
@@ -42,6 +49,7 @@ interface PlannerContextType {
   departureMethod: TransitMethod;
   departureLocation: string;
   dailyActiveHours: number;
+  activityPace: ActivityPace;
   setArrivalDate: (d: Date) => void;
   setDepartureDate: (d: Date) => void;
   setArrivalMethod: (m: TransitMethod) => void;
@@ -49,6 +57,7 @@ interface PlannerContextType {
   setDepartureMethod: (m: TransitMethod) => void;
   setDepartureLocation: (l: string) => void;
   setDailyActiveHours: (n: number) => void;
+  setActivityPace: (p: ActivityPace) => void;
   setActiveDayId: (id: string) => void;
   addToShortlist: (activity: Activity) => void;
   removeFromShortlist: (id: string) => void;
@@ -61,11 +70,12 @@ interface PlannerContextType {
   addCustomActivity: (activity: PlannedActivity, date?: string) => void;
 }
 
-const PlannerContext = createContext<PlannerContextType | undefined>(undefined);
+export const PlannerContext = createContext<PlannerContextType | undefined>(undefined);
 
 export function PlannerProvider({ children }: { children: React.ReactNode }) {
   const [shortlist, setShortlist] = useState<Activity[]>([]);
   const [dailyActiveHours, setDailyActiveHours] = useState(8);
+  const [activityPace, setActivityPace] = useState<ActivityPace>('normal');
 
   const [arrivalDate, setArrivalDate] = useState<Date>(() => startOfDay(new Date()));
   const [departureDate, setDepartureDate] = useState<Date>(() => addDays(startOfDay(new Date()), 2));
@@ -195,6 +205,7 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       departureMethod,
       departureLocation,
       dailyActiveHours,
+      activityPace,
       setArrivalDate,
       setDepartureDate,
       setArrivalMethod,
@@ -202,6 +213,7 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       setDepartureMethod,
       setDepartureLocation,
       setDailyActiveHours,
+      setActivityPace,
       setActiveDayId,
       addToShortlist,
       removeFromShortlist,
