@@ -1,0 +1,223 @@
+{
+  "entities": {
+    "Activity": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Activity",
+      "type": "object",
+      "description": "Represents a pre-curated point of interest or event that users can select and add to their itinerary. Data for these activities is typically ingested from a data source like a Google Sheet.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Activity entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The common name of the activity or point of interest."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description providing more information about the activity."
+        },
+        "type": {
+          "type": "string",
+          "description": "Categorization of the activity (e.g., 'Historical Site', 'Restaurant', 'Outdoor Recreation', 'Shopping')."
+        },
+        "address": {
+          "type": "string",
+          "description": "The full physical street address of the activity's location."
+        },
+        "latitude": {
+          "type": "number",
+          "description": "The geographical latitude coordinate of the activity's location, essential for mapping and routing."
+        },
+        "longitude": {
+          "type": "number",
+          "description": "The geographical longitude coordinate of the activity's location, essential for mapping and routing."
+        },
+        "estimatedDurationMinutes": {
+          "type": "number",
+          "description": "An estimated duration in minutes that a user might typically spend at this activity, used for itinerary planning calculations."
+        },
+        "websiteUrl": {
+          "type": "string",
+          "description": "An optional URL pointing to the activity's official website for more information.",
+          "format": "uri"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "An optional URL to an image visually representing the activity, for display in the UI.",
+          "format": "uri"
+        },
+        "costEstimate": {
+          "type": "string",
+          "description": "An estimate of the general cost associated with the activity (e.g., 'Free', 'Low', 'Moderate', 'High', '$', '$$', '$$$')."
+        },
+        "isKidFriendly": {
+          "type": "boolean",
+          "description": "A flag indicating whether the activity is generally considered suitable for children."
+        },
+        "notesFromSource": {
+          "type": "string",
+          "description": "Any additional raw notes or miscellaneous details imported directly from the original data source (e.g., CSV) that don't fit into other structured fields."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "type",
+        "address",
+        "latitude",
+        "longitude"
+      ]
+    },
+    "Itinerary": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Itinerary",
+      "type": "object",
+      "description": "Represents a user-created daily plan, consisting of an ordered sequence of selected activities. This entity facilitates saving, loading, and sharing a user's planned day.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Itinerary entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "A user-defined name for this specific itinerary (e.g., 'Saturday Fun Day in Lowell')."
+        },
+        "description": {
+          "type": "string",
+          "description": "An optional, user-provided general description or notes for the entire day's itinerary."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating the exact date and time when the itinerary was first created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating the exact date and time when the itinerary was last modified.",
+          "format": "date-time"
+        },
+        "shareCode": {
+          "type": "string",
+          "description": "A short, unique, and private alphanumeric code used to access and share this specific itinerary via a private link. This helps protect potentially sensitive user notes or reservation information."
+        },
+        "plannedDate": {
+          "type": "string",
+          "description": "The specific calendar date for which this itinerary is planned.",
+          "format": "date"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "createdAt",
+        "updatedAt",
+        "shareCode"
+      ]
+    },
+    "ItineraryActivity": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ItineraryActivity",
+      "type": "object",
+      "description": "Represents a specific instance of an Activity chosen for an Itinerary. This entity links an activity to a plan and captures user-defined planning details unique to that activity within the itinerary.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ItineraryActivity entity."
+        },
+        "itineraryId": {
+          "type": "string",
+          "description": "Reference to the Itinerary that this planned activity belongs to. (Relationship: Itinerary 1:N ItineraryActivity)"
+        },
+        "activityId": {
+          "type": "string",
+          "description": "Reference to the base Activity entity that is being planned. (Relationship: Activity 1:N ItineraryActivity)"
+        },
+        "sequenceOrder": {
+          "type": "number",
+          "description": "A zero-based integer indicating the sequential order of this activity within its itinerary's daily plan. This is crucial for routing, drive time calculations, and displaying the plan correctly."
+        },
+        "isOptional": {
+          "type": "boolean",
+          "description": "A flag indicating if this activity is marked as 'optional'. Optional activities are displayed in the planner but are not included in Google Maps route generation or total drive time calculations."
+        },
+        "userNotes": {
+          "type": "string",
+          "description": "User-specific notes or comments for this particular instance of the activity within the itinerary. This can include sensitive details like reservation confirmation numbers."
+        },
+        "plannedStartTime": {
+          "type": "string",
+          "description": "The user-defined or system-suggested start date and time for this specific activity, used for time-aware drive time calculations and scheduling.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "itineraryId",
+        "activityId",
+        "sequenceOrder",
+        "isOptional",
+        "plannedStartTime"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/activities",
+        "definition": {
+          "entityName": "Activity",
+          "schema": {
+            "$ref": "#/backend/entities/Activity"
+          },
+          "description": "A top-level collection for pre-curated activities. These documents are publicly readable by all users (authenticated or unauthenticated). No specific authorization fields are required on these documents themselves as access is global read-only."
+        }
+      },
+      {
+        "path": "/itineraries/{itineraryId}",
+        "definition": {
+          "entityName": "Itinerary",
+          "schema": {
+            "$ref": "#/backend/entities/Itinerary"
+          },
+          "description": "A top-level collection storing user-created itineraries. Each document includes an 'ownerId' (the UID of the creator) for ownership-based security and a unique 'shareCode' for secure, private link access. This enables both owner-controlled management and code-based sharing for read access.",
+          "params": [
+            {
+              "name": "itineraryId",
+              "description": "The unique identifier for a specific Itinerary document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/itineraries/{itineraryId}/itineraryActivities/{itineraryActivityId}",
+        "definition": {
+          "entityName": "ItineraryActivity",
+          "schema": {
+            "$ref": "#/backend/entities/ItineraryActivity"
+          },
+          "description": "A subcollection for specific activities planned within an Itinerary. Each document includes denormalized 'ownerId' and 'shareCode' from its parent Itinerary for authorization independence. It also denormalizes 'activityName', 'activityAddress', 'activityLatitude', 'activityLongitude', and 'activityEstimatedDurationMinutes' from the referenced Activity for efficient display, mapping, and routing calculations without requiring additional reads to the main /activities collection.",
+          "params": [
+            {
+              "name": "itineraryId",
+              "description": "The unique identifier of the parent Itinerary."
+            },
+            {
+              "name": "itineraryActivityId",
+              "description": "The unique identifier for a specific ItineraryActivity document within an Itinerary."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to be secure, scalable, and debuggable by strictly adhering to the core design principles. The primary goal is to provide a robust system for users to create, save, and share itineraries, addressing the user's need for easy access and a 'send to me' feature with a private link and code.\n\n**Authorization Independence (CRITICAL) & Denormalization:**\n*   **Itineraries:** The `Itinerary` entity includes an `ownerId` field (UID of the creator, or null for anonymous users) and a `shareCode` field. This allows direct authorization checks on the `Itinerary` document itself, enabling both owner-based access and share-code-based anonymous access without dependencies on parent documents. Rules can directly evaluate `request.auth.uid == resource.data.ownerId` for owner access or `resource.data.shareCode == request.resource.data.shareCode` for shared access.\n*   **ItineraryActivities:** These are subcollection documents under a specific `Itinerary`. To ensure authorization independence, critical authorization context from the parent `Itinerary` (namely `ownerId` and `shareCode`) is denormalized into *every* `ItineraryActivity` document. This means that security rules for `ItineraryActivity` can check `resource.data.ownerId` or `resource.data.shareCode` directly, eliminating any need for `get()` calls to the parent `Itinerary` document. Furthermore, key display and mapping data from the `Activity` entity (such as `activityName`, `activityAddress`, `activityLatitude`, `activityLongitude`, `activityEstimatedDurationMinutes`) are also denormalized into `ItineraryActivity`. This allows the application to retrieve a complete itinerary (all its activities) and display them, calculate routes, or generate map links with a single read operation of the `ItineraryActivity` subcollection, without requiring additional `get()` calls to the top-level `activities` collection.\n\n**QAPs (Rules are not Filters):**\n*   **`/activities`:** This collection houses curated, read-only public data. Firestore rules for this collection will simply allow `read` access for all, ensuring all queries are QAP-compliant and efficient. Since all documents are public, `list` operations are implicitly secure.\n*   **`/itineraries/{itineraryId}`:** Users will query their own itineraries using `itineraries.where('ownerId', '==', request.auth.uid)`. This is a QAP-compliant `list` operation, as the `ownerId` field on each `Itinerary` document allows Firestore to efficiently filter results based on the authenticated user's ID. For shared access, specific `itineraryId` and `shareCode` will be provided, allowing direct document access checks based on `resource.data.shareCode`. \n*   **`/itineraries/{itineraryId}/itineraryActivities/{itineraryActivityId}`:** Due to denormalized `ownerId` and `shareCode`, `list` operations for an itinerary's activities (e.g., `itineraryActivities.where('itineraryId', '==', '{itineraryId}').where('ownerId', '==', request.auth.uid)`) are also QAP-compliant. This structure ensures that rules can directly evaluate permissions for each document in a queried set without relying on slow or insecure cross-document `get()` calls.\n\n**Structural Segregation & Access Modeling:**\n*   **`/activities`:** A top-level collection for globally accessible, pre-curated activities. This collection has a homogeneous security posture: publicly readable by all.\n*   **`/itineraries/{itineraryId}`:** A top-level collection for user-created itineraries. Its security posture is private to the `ownerId` for write access, and shareable via `shareCode` for read access. This segregation prevents mixing different access requirements within the same collection. The `ownerId` field aligns with the Private Data access model for management, while `shareCode` handles the Collaborative Data (read-only) model.\n*   **`/itineraries/{itineraryId}/itineraryActivities/{itineraryActivityId}`:** This subcollection represents nested data, directly tied to its parent itinerary. Its security posture is derived from the parent's denormalized fields, ensuring consistency. This uses the 'Continue Hierarchy for Nested Data' approach effectively."
+  }
+}
