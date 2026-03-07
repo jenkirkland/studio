@@ -268,7 +268,7 @@ export function PlannerUI() {
   return (
     <Tabs defaultValue="discover" className="w-full">
       <div className="flex items-center justify-center mb-10">
-        <TabsList className="grid w-full max-w-lg grid-cols-2 bg-muted h-12 rounded-2xl p-1 shadow-sm border border-primary/10">
+        <TabsList className="grid w-full max-lg grid-cols-2 bg-muted h-12 rounded-2xl p-1 shadow-sm border border-primary/10 max-w-lg">
           <TabsTrigger value="discover" className="rounded-xl font-black text-sm uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-primary">
             <Search className="h-4 w-4 mr-2" /> 1. Discover
           </TabsTrigger>

@@ -1,4 +1,3 @@
-
 import Image from "next/image";
 import { PlannerProvider } from "./components/planner-store";
 import { PlannerUI } from "./components/PlannerUI";
@@ -36,16 +35,16 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 relative z-20">
+      <main className="container mx-auto px-4 py-8 -mt-8 relative z-20">
         <PlannerProvider>
           <PlannerUI />
         </PlannerProvider>
       </main>
 
-      <footer className="py-12 border-t bg-white text-center text-sm text-muted-foreground mt-12">
+      <footer className="py-8 border-t bg-white/50 text-center text-sm text-muted-foreground">
         <div className="container mx-auto px-4">
-          <p className="font-black uppercase tracking-widest text-[10px] text-primary/60 mb-2">© {new Date().getFullYear()} Boston Merrimack Wanderer</p>
-          <p className="text-[11px] font-medium">Crafted with tranquility in Tewksbury, MA. Proudly exploring the Merrimack Valley.</p>
+          <p>© {new Date().getFullYear()} Boston Merrimack Wanderer. Proudly exploring the Merrimack Valley.</p>
+          <p className="mt-1">Crafted with tranquility in Tewksbury, MA.</p>
         </div>
       </footer>
     </div>

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { Activity } from '@/app/lib/activities';
-import { addDays, differenceInDays, startOfDay, format } from 'date-fns';
+import { addDays, differenceInDays, startOfDay, format, isAfter, isBefore, isEqual } from 'date-fns';
 
 export interface PlannedActivity extends Activity {
   isOptional: boolean;
@@ -80,11 +80,15 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
   const [activeDayId, setActiveDayId] = useState<string>('');
 
   useEffect(() => {
-    const numDays = differenceInDays(startOfDay(departureDate), startOfDay(arrivalDate)) + 1;
+    // Ensure departure isn't before arrival
+    const start = startOfDay(arrivalDate);
+    const end = isBefore(departureDate, arrivalDate) ? addDays(arrivalDate, 1) : startOfDay(departureDate);
+    
+    const numDays = Math.max(1, differenceInDays(end, start) + 1);
     const newDays: DayPlan[] = [];
     
     for (let i = 0; i < numDays; i++) {
-      const currentDate = addDays(arrivalDate, i);
+      const currentDate = addDays(start, i);
       const dateStr = format(currentDate, 'yyyy-MM-dd');
       
       const existing = days.find(d => d.date === dateStr);
@@ -105,8 +109,13 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
     }
     
     setDays(newDays);
-    if (newDays.length > 0 && (!activeDayId || !newDays.find(d => d.id === activeDayId))) {
-      setActiveDayId(newDays[0].id);
+    
+    // Safety check for activeDayId
+    if (newDays.length > 0) {
+      const stillExists = newDays.some(d => d.id === activeDayId);
+      if (!activeDayId || !stillExists) {
+        setActiveDayId(newDays[0].id);
+      }
     }
   }, [arrivalDate, departureDate, arrivalLocation, departureLocation]);
 
