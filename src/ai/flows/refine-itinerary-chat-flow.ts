@@ -39,6 +39,7 @@ export async function refineItineraryChat(input: RefineInput): Promise<RefineOut
 
 const prompt = ai.definePrompt({
   name: 'refineItineraryPrompt',
+  model: 'googleai/gemini-1.5-flash',
   input: { schema: RefineInputSchema },
   output: { schema: RefineOutputSchema },
   prompt: `You are an itinerary assistant. A user wants to modify their current plan.

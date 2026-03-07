@@ -34,8 +34,8 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 -mt-8 relative z-20">
+      {/* Main Content - Removed negative margin to fix persistent shadowed line */}
+      <main className="container mx-auto px-4 py-8 relative z-20">
         <PlannerProvider>
           <PlannerUI />
         </PlannerProvider>

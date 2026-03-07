@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import { Activity } from '@/app/lib/activities';
-import { addDays, differenceInDays, startOfDay, format, isBefore, parse } from 'date-fns';
+import { addDays, differenceInDays, startOfDay, format, isBefore } from 'date-fns';
 
 export interface PlannedActivity extends Activity {
   isOptional: boolean;
@@ -100,6 +100,7 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
   const [days, setDays] = useState<DayPlan[]>(currentDaysBase);
   const [activeDayId, setActiveDayId] = useState<string>(currentDaysBase[0]?.id || '');
 
+  // Synchronize days when logistics change, preserving existing activities
   useEffect(() => {
     setDays(prev => {
       const updated = currentDaysBase.map(newDay => {
@@ -110,6 +111,7 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
     });
   }, [currentDaysBase]);
 
+  // Ensure an active day is always selected to prevent "Initializing" hang
   useEffect(() => {
     if (days.length > 0) {
       const exists = days.some(d => d.id === activeDayId);
