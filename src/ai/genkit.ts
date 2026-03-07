@@ -3,7 +3,7 @@ import {googleAI} from '@genkit-ai/google-genai';
 
 /**
  * Genkit instance configured for the Boston Merrimack Wanderer app.
- * Using the provided API key and the Pro model for high-tier performance.
+ * Using the provided API key and the 1.5 Pro model for high-tier performance.
  */
 export const ai = genkit({
   plugins: [
