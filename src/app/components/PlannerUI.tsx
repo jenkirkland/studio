@@ -7,13 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Map, 
-  Search, 
-  ListTodo, 
-  Clock, 
-  Settings2, 
-  Loader2, 
+import {
+  Map,
+  Search,
+  ListTodo,
+  Clock,
+  Settings2,
+  Loader2,
   Share2,
   Wand2,
   Plane,
@@ -31,15 +31,16 @@ import { optimizeFullTrip } from "@/ai/flows/optimize-itinerary-flow";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ACTIVITIES } from "../lib/activities";
+import { recalculateTimelineWithTraffic } from "@/lib/calculate-routes";
 
 export function PlannerUI() {
-  const { 
-    shortlist, 
-    days, 
-    activeDayId, 
-    setActiveDayId, 
-    addActivityToDay, 
-    removeActivityFromDay, 
+  const {
+    shortlist,
+    days,
+    activeDayId,
+    setActiveDayId,
+    addActivityToDay,
+    removeActivityFromDay,
     toggleOptional,
     arrivalDate,
     setArrivalDate,
@@ -52,7 +53,7 @@ export function PlannerUI() {
     setDays,
     setShortlist
   } = usePlanner();
-  
+
   const [isOptimizing, setIsOptimizing] = useState(false);
 
   const activeDay = useMemo(() => {
@@ -63,7 +64,7 @@ export function PlannerUI() {
     if (days.length === 0) return;
     setIsOptimizing(true);
     try {
-      const result = await optimizeFullTrip({
+      const response = await optimizeFullTrip({
         days: days.map(d => ({
           id: d.id,
           name: d.name,
@@ -91,6 +92,12 @@ export function PlannerUI() {
         dailyActiveHours: dailyActiveHours
       });
 
+      if (!response.success) {
+        throw new Error(response.error);
+      }
+
+      const result = response.data;
+
       if (!result || !result.optimizedDays || result.optimizedDays.length === 0) {
         throw new Error("AI service did not return an updated plan.");
       }
@@ -101,8 +108,8 @@ export function PlannerUI() {
 
         const activities: PlannedActivity[] = (optimizedDay.activities || []).map(item => {
           // Look for matching activity in existing day, wishlist, or global list
-          const existing = [...d.activities, ...shortlist, ...ACTIVITIES].find(a => 
-            a.id === item.id || 
+          const existing = [...d.activities, ...shortlist, ...ACTIVITIES].find(a =>
+            a.id === item.id ||
             a.name.toLowerCase() === item.name.toLowerCase()
           );
 
@@ -118,6 +125,7 @@ export function PlannerUI() {
             isOptional: false,
             isMeal: item.type === 'meal',
             travelTimeFromPrev: item.travelTimeMinutes,
+            travelModeFromPrev: 'car', // Temporary fallback, will be overwritten by route processor
             fixedStartTime: existing?.fixedStartTime || (item.isFixed ? item.startTime : undefined)
           } as PlannedActivity;
         });
@@ -125,13 +133,27 @@ export function PlannerUI() {
         return { ...d, activities };
       });
 
-      setDays(updatedDays);
-      
+      // Pass 2: Post-process every day through the Google Maps routing engine
+      const fullyRoutedDays = await Promise.all(updatedDays.map(async (d) => {
+        const startLoc = d.startLocation || "Tewksbury, MA";
+        const startH = d.startHourOverride || 9;
+
+        try {
+          const routedActivities = await recalculateTimelineWithTraffic(d.activities, startLoc, d.date, startH);
+          return { ...d, activities: routedActivities };
+        } catch (e) {
+          console.error(`Routing failed for day ${d.id}, falling back to AI times:`, e);
+          return d;
+        }
+      }));
+
+      setDays(fullyRoutedDays);
+
       // Only filter the shortlist if we have a valid list of remaining IDs
       if (Array.isArray(result.remainingWishlistIds)) {
         setShortlist(shortlist.filter(a => result.remainingWishlistIds.includes(a.id)));
       }
-      
+
       toast({
         title: "Itinerary Optimized",
         description: result.explanation || "Your entire trip has been organized.",
@@ -201,12 +223,12 @@ export function PlannerUI() {
                 <Settings2 className="w-5 h-5" />
                 <h3 className="text-xs font-black uppercase tracking-widest">Trip Logistics</h3>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="space-y-4 p-4 rounded-2xl bg-primary/5 border border-primary/10">
                   <Label className="text-[10px] font-black uppercase text-primary">Arrival</Label>
-                  <Input 
-                    type="datetime-local" 
+                  <Input
+                    type="datetime-local"
                     value={format(arrivalDate, "yyyy-MM-dd'T'HH:mm")}
                     onChange={(e) => setArrivalDate(new Date(e.target.value))}
                     className="h-10 text-xs font-bold rounded-xl"
@@ -231,8 +253,8 @@ export function PlannerUI() {
 
                 <div className="space-y-4 p-4 rounded-2xl bg-accent/5 border border-accent/10">
                   <Label className="text-[10px] font-black uppercase text-accent">Departure</Label>
-                  <Input 
-                    type="datetime-local" 
+                  <Input
+                    type="datetime-local"
                     value={format(departureDate, "yyyy-MM-dd'T'HH:mm")}
                     onChange={(e) => setDepartureDate(new Date(e.target.value))}
                     className="h-10 text-xs font-bold rounded-xl"
@@ -241,9 +263,10 @@ export function PlannerUI() {
               </div>
 
               <div className="pt-2 space-y-3">
-                <Button 
+                <Button
                   onClick={handleGlobalOptimization}
                   disabled={isOptimizing}
+                  type="button"
                   className="w-full bg-primary font-black text-[10px] uppercase h-12 rounded-xl"
                 >
                   {isOptimizing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Wand2 className="w-4 h-4 mr-2" />}
@@ -261,11 +284,11 @@ export function PlannerUI() {
                     <p className="text-[10px] text-muted-foreground font-bold uppercase text-center py-10 opacity-50">Empty Wishlist</p>
                   ) : (
                     shortlist.map(activity => (
-                      <ActivityCard 
-                        key={activity.id} 
-                        activity={activity} 
-                        actionType="add" 
-                        onAction={() => addActivityToDay(activity, activeDayId)} 
+                      <ActivityCard
+                        key={activity.id}
+                        activity={activity}
+                        actionType="add"
+                        onAction={() => addActivityToDay(activity, activeDayId)}
                       />
                     ))
                   )}
@@ -313,9 +336,9 @@ export function PlannerUI() {
 
               <div className="space-y-8 pl-6 border-l-2 border-primary/10 relative">
                 {activeDay.activities.length === 0 ? (
-                   <div className="text-center py-20 opacity-30 font-black uppercase tracking-widest text-xs">
-                      No activities planned for this day.
-                   </div>
+                  <div className="text-center py-20 opacity-30 font-black uppercase tracking-widest text-xs">
+                    No activities planned for this day.
+                  </div>
                 ) : activeDay.activities.map((activity, idx) => {
                   const isMealPlaceholder = activity.isMeal && activity.type === 'food' && activity.description.toLowerCase().includes('recommended');
                   return (
@@ -331,21 +354,28 @@ export function PlannerUI() {
                         <span className="text-[11px] font-black text-primary/80 uppercase bg-primary/5 px-3 py-1 rounded-full">
                           {activity.scheduledTime || "--:--"} — {activity.endTime || "--:--"}
                         </span>
+
+                        {activity.travelTimeFromPrev !== undefined && activity.travelTimeFromPrev > 0 && (
+                          <div className="flex items-center gap-1 text-[10px] font-black uppercase text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
+                            {activity.travelModeFromPrev === 'walk' ? <span className="text-lg leading-none">🚶</span> : <Car className="w-3 h-3" />}
+                            <span>{activity.travelTimeFromPrev} min</span>
+                          </div>
+                        )}
                       </div>
 
                       {isMealPlaceholder ? (
-                        <MealRecommendation 
-                          activity={activity} 
-                          prevActivity={activeDay.activities[idx - 1]} 
+                        <MealRecommendation
+                          activity={activity}
+                          prevActivity={activeDay.activities[idx - 1]}
                           nextActivity={activeDay.activities[idx + 1]}
                           dayId={activeDayId}
                         />
                       ) : (
-                        <ActivityCard 
-                          activity={activity} 
-                          actionType="remove" 
-                          onAction={() => removeActivityFromDay(activity.id, activeDayId)} 
-                          onToggleOptional={() => toggleOptional(activity.id, activeDayId)} 
+                        <ActivityCard
+                          activity={activity}
+                          actionType="remove"
+                          onAction={() => removeActivityFromDay(activity.id, activeDayId)}
+                          onToggleOptional={() => toggleOptional(activity.id, activeDayId)}
                         />
                       )}
                     </div>

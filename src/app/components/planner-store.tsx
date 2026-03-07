@@ -11,6 +11,7 @@ export interface PlannedActivity extends Activity {
   isMeal?: boolean;
   travelTimeToNext?: number;
   travelTimeFromPrev?: number;
+  travelModeFromPrev?: 'car' | 'walk' | 'transit';
   fixedStartTime?: string;
   date?: string;
   notes?: string;
@@ -65,19 +66,19 @@ const PlannerContext = createContext<PlannerContextType | undefined>(undefined);
 export function PlannerProvider({ children }: { children: React.ReactNode }) {
   const [shortlist, setShortlist] = useState<Activity[]>([]);
   const [dailyActiveHours, setDailyActiveHours] = useState(8);
-  
+
   const [arrivalDate, setArrivalDate] = useState<Date>(() => startOfDay(new Date()));
   const [departureDate, setDepartureDate] = useState<Date>(() => addDays(startOfDay(new Date()), 2));
   const [arrivalMethod, setArrivalMethod] = useState<TransitMethod>('car');
   const [arrivalLocation, setArrivalLocation] = useState('Tewksbury, MA');
   const [departureMethod, setDepartureMethod] = useState<TransitMethod>('car');
   const [departureLocation, setDepartureLocation] = useState('Tewksbury, MA');
-  
+
   const currentDaysBase = useMemo(() => {
     const start = startOfDay(arrivalDate);
     let end = startOfDay(departureDate);
     if (isBefore(end, start)) end = addDays(start, 1);
-    
+
     const numDays = Math.max(1, differenceInDays(end, start) + 1);
     const res: DayPlan[] = [];
     for (let i = 0; i < numDays; i++) {
@@ -173,7 +174,7 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       if (day.id === dayId) {
         return {
           ...day,
-          activities: day.activities.map(a => 
+          activities: day.activities.map(a =>
             a.id === activityId ? { ...a, isOptional: !a.isOptional } : a
           )
         };
@@ -183,9 +184,9 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <PlannerContext.Provider value={{ 
-      shortlist, 
-      days, 
+    <PlannerContext.Provider value={{
+      shortlist,
+      days,
       activeDayId,
       arrivalDate,
       departureDate,
@@ -202,7 +203,7 @@ export function PlannerProvider({ children }: { children: React.ReactNode }) {
       setDepartureLocation,
       setDailyActiveHours,
       setActiveDayId,
-      addToShortlist, 
+      addToShortlist,
       removeFromShortlist,
       addActivityToDay,
       removeActivityFromDay,

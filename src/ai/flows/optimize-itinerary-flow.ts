@@ -4,8 +4,8 @@
  * Includes both full-trip distribution and single-day sequencing.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 
 const ActivitySchema = z.object({
   id: z.string(),
@@ -68,23 +68,35 @@ const OptimizeItineraryOutputSchema = z.object({
   itinerary: z.array(OptimizedItemSchema),
 });
 
-export type OptimizeFullTripInput = z.infer<typeof OptimizeFullTripInputSchema>;
 export type OptimizeFullTripOutput = z.infer<typeof OptimizeFullTripOutputSchema>;
+export type OptimizeFullTripResponse = { success: true; data: OptimizeFullTripOutput } | { success: false; error: string };
 export type OptimizeItineraryInput = z.infer<typeof OptimizeItineraryInputSchema>;
 export type OptimizeItineraryOutput = z.infer<typeof OptimizeItineraryOutputSchema>;
-
+export type OptimizeItineraryResponse = { success: true; data: OptimizeItineraryOutput } | { success: false; error: string };
 /**
  * Optimizes an entire multi-day trip by distributing wishlist items and sequencing everything.
  */
-export async function optimizeFullTrip(input: OptimizeFullTripInput): Promise<OptimizeFullTripOutput> {
-  return optimizeFullTripFlow(input);
+export async function optimizeFullTrip(input: OptimizeFullTripInput): Promise<OptimizeFullTripResponse> {
+  try {
+    const data = await optimizeFullTripFlow(input);
+    return { success: true, data };
+  } catch (error: any) {
+    console.error("Genkit Flow Error:", error);
+    return { success: false, error: error?.message || "An unknown AI error occurred." };
+  }
 }
 
 /**
  * Optimizes a single day's sequence of activities.
  */
-export async function optimizeItinerary(input: OptimizeItineraryInput): Promise<OptimizeItineraryOutput> {
-  return optimizeItineraryFlow(input);
+export async function optimizeItinerary(input: OptimizeItineraryInput): Promise<OptimizeItineraryResponse> {
+  try {
+    const data = await optimizeItineraryFlow(input);
+    return { success: true, data };
+  } catch (error: any) {
+    console.error("Genkit Flow Error:", error);
+    return { success: false, error: error?.message || "An unknown AI error occurred." };
+  }
 }
 
 const fullTripPrompt = ai.definePrompt({
@@ -97,17 +109,17 @@ Goal: Organize a multi-day trip by distributing wishlist items and sequencing ev
 
 Wishlist (Unscheduled):
 {{#each wishlist}}
-- {{{name}}} ({{{durationMinutes}}} mins, {{{type}}}) at {{{address}}}
+- ID: {{{id}}} | {{{name}}} ({{{durationMinutes}}} mins, {{{type}}}) at {{{address}}}
 {{/each}}
 
 Current Days & Constraints:
 {{#each days}}
-- Day: {{{name}}} ({{{date}}})
+- Day ID: {{{id}}} | {{{name}}} ({{{date}}})
   Start: {{{startLocation}}} {{#if startHour}}at {{{startHour}}}:00{{/if}}
   End: {{{endLocation}}} {{#if endHour}}by {{{endHour}}}:00{{/if}}
   Already Scheduled:
   {{#each activities}}
-  * {{{name}}} ({{{durationMinutes}}} mins) {{#if fixedStartTime}}[FIXED AT {{{fixedStartTime}}}]{{/if}}
+  * ID: {{{id}}} | {{{name}}} ({{{durationMinutes}}} mins) {{#if fixedStartTime}}[FIXED AT {{{fixedStartTime}}}]{{/if}}
   {{/each}}
 {{/each}}
 
@@ -118,7 +130,8 @@ Rules:
 4. Respect FIXED times exactly.
 5. Insert 60-min Lunch gaps around noon if a day has enough activities.
 6. Calculate travel time from the previous location.
-7. If an item doesn't fit anywhere, keep its ID in remainingWishlistIds.`,
+7. If an item doesn't fit anywhere, keep its ID in remainingWishlistIds.
+8. IMPORTANT: You MUST use the exact Day ID and Activity ID provided in the output JSON. Never make up your own IDs.`,
 });
 
 const singleDayPrompt = ai.definePrompt({
@@ -132,14 +145,15 @@ End Location: {{{endLocation}}} {{#if endHour}}by {{{endHour}}}:00{{/if}}
 
 Activities:
 {{#each activities}}
-- {{{name}}} ({{{durationMinutes}}} mins) {{#if fixedStartTime}}[FIXED AT {{{fixedStartTime}}}]{{/if}} at {{{address}}}
+- ID: {{{id}}} | {{{name}}} ({{{durationMinutes}}} mins) {{#if fixedStartTime}}[FIXED AT {{{fixedStartTime}}}]{{/if}} at {{{address}}}
 {{/each}}
 
 Rules:
 1. Sequence to minimize travel time.
 2. Respect FIXED times exactly.
 3. Insert 60-min Lunch gap around noon if there is time.
-4. Calculate travel time from previous location.`,
+4. Calculate travel time from previous location.
+5. IMPORTANT: You MUST use the exact Activity ID provided in the output JSON. Never make up your own IDs.`,
 });
 
 const optimizeFullTripFlow = ai.defineFlow(

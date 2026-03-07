@@ -7,6 +7,7 @@ import { optimizeItinerary } from '@/ai/flows/optimize-itinerary-flow';
 import { Button } from '@/components/ui/button';
 import { Loader2, Wand2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { recalculateTimelineWithTraffic } from '@/lib/calculate-routes';
 
 export function OptimizeItinerary() {
   const { days, activeDayId, setDayActivities, startHour } = usePlanner();
@@ -25,7 +26,7 @@ export function OptimizeItinerary() {
 
     setLoading(true);
     try {
-      const result = await optimizeItinerary({
+      const response = await optimizeItinerary({
         activities: activeDay.activities.map(a => ({
           id: a.id,
           name: a.name,
@@ -39,6 +40,12 @@ export function OptimizeItinerary() {
         startLocation: activeDay.startLocation,
         endLocation: activeDay.endLocation
       });
+
+      if (!response.success) {
+        throw new Error(response.error);
+      }
+
+      const result = response.data;
 
       if (!result?.itinerary) {
         throw new Error("Invalid AI response");
@@ -58,11 +65,23 @@ export function OptimizeItinerary() {
           isOptional: false,
           isMeal: item.type === 'meal',
           travelTimeFromPrev: item.travelTimeMinutes,
+          travelModeFromPrev: 'car',
           fixedStartTime: existing?.fixedStartTime || (item.isFixed ? item.startTime : undefined)
         };
       });
 
-      setDayActivities(activeDayId, optimizedActivities);
+      // Post-process sequence through Google Maps Routes API
+      const startLoc = activeDay.startLocation || "Tewksbury, MA";
+      const startH = activeDay.startHourOverride || startHour || 9;
+
+      let finalActivities = optimizedActivities;
+      try {
+        finalActivities = await recalculateTimelineWithTraffic(optimizedActivities, startLoc, activeDay.date, startH);
+      } catch (e) {
+        console.error(`Routing failed, falling back to AI times:`, e);
+      }
+
+      setDayActivities(activeDayId, finalActivities);
       toast({
         title: "Itinerary Optimized!",
         description: "We've reordered stops around your fixed times and calculated travel.",
@@ -72,8 +91,8 @@ export function OptimizeItinerary() {
       const isQuotaError = err.message?.includes('429') || err.message?.includes('RESOURCE_EXHAUSTED');
       toast({
         title: isQuotaError ? "AI is Busy" : "Optimization Failed",
-        description: isQuotaError 
-          ? "We've hit the AI request limit. Please wait about 30 seconds and try again." 
+        description: isQuotaError
+          ? "We've hit the AI request limit. Please wait about 30 seconds and try again."
           : "Something went wrong while calculating your route.",
         variant: "destructive"
       });
@@ -83,9 +102,10 @@ export function OptimizeItinerary() {
   };
 
   return (
-    <Button 
-      onClick={handleOptimize} 
+    <Button
+      onClick={handleOptimize}
       disabled={loading}
+      type="button"
       variant="outline"
       size="sm"
       className="border-primary text-primary hover:bg-primary/5 h-8 text-[10px] font-black uppercase tracking-widest"
