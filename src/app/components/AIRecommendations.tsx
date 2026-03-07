@@ -9,31 +9,33 @@ import { Sparkles, Loader2, Plus, AlertCircle } from 'lucide-react';
 import { ACTIVITIES } from '../lib/activities';
 
 export function AIRecommendations() {
-  const { plan, addActivity, availableActivities } = usePlanner();
+  const { shortlist, days, activeDayId, addActivityToDay, availableActivities } = usePlanner();
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState<SuggestComplementaryActivitiesOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const activeDay = days.find(d => d.id === activeDayId) || days[0];
 
   const getRecommendations = async () => {
     setLoading(true);
     setError(null);
     try {
       const result = await suggestComplementaryActivities({
-        selectedActivities: plan.map(p => ({
+        selectedActivities: activeDay.activities.map(p => ({
           name: p.name,
           description: p.description,
           type: p.type,
           durationMinutes: p.durationMinutes,
           address: p.address,
         })),
-        allPotentialActivities: availableActivities.map(a => ({
+        allPotentialActivities: ACTIVITIES.map(a => ({
           name: a.name,
           description: a.description,
           type: a.type,
           durationMinutes: a.durationMinutes,
           address: a.address,
         })),
-        remainingBudgetedMinutes: 480 - plan.reduce((s, p) => s + p.durationMinutes, 0)
+        remainingBudgetedMinutes: 480 - activeDay.activities.reduce((s, p) => s + p.durationMinutes, 0)
       });
       setRecommendations(result);
     } catch (err) {
@@ -45,10 +47,9 @@ export function AIRecommendations() {
   };
 
   const handleAddSuggested = (name: string) => {
-    const activity = availableActivities.find(a => a.name === name);
+    const activity = ACTIVITIES.find(a => a.name === name);
     if (activity) {
-      addActivity(activity);
-      // Remove from recommendations local state if needed
+      addActivityToDay(activity, activeDayId);
       if (recommendations) {
         setRecommendations({
           ...recommendations,
@@ -64,7 +65,7 @@ export function AIRecommendations() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-accent" />
-            <h3 className="font-headline font-bold text-accent-foreground">Wanderer Smart Suggestions</h3>
+            <h3 className="font-headline font-bold text-accent-foreground">Smart Suggestions for {activeDay.name}</h3>
           </div>
           <Button 
             variant="ghost" 
@@ -98,7 +99,7 @@ export function AIRecommendations() {
                   className="w-full text-xs h-7 border-accent text-accent hover:bg-accent hover:text-white"
                   onClick={() => handleAddSuggested(rec.name)}
                 >
-                  <Plus className="w-3 h-3 mr-1" /> Add
+                  <Plus className="w-3 h-3 mr-1" /> Add to {activeDay.name}
                 </Button>
               </div>
             ))}
@@ -107,7 +108,7 @@ export function AIRecommendations() {
 
         {!recommendations && !loading && (
           <p className="text-xs text-muted-foreground text-center py-2">
-            Click 'Get Ideas' for AI-curated activities that complement your current choices.
+            Click 'Get Ideas' for curated activities that complement your current choices.
           </p>
         )}
       </CardContent>

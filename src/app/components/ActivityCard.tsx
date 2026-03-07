@@ -22,6 +22,13 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
     art: "bg-purple-100 text-purple-700",
     entertainment: "bg-blue-100 text-blue-700",
     shopping: "bg-pink-100 text-pink-700",
+    sports: "bg-red-100 text-red-700",
+    culture: "bg-indigo-100 text-indigo-700",
+    science: "bg-cyan-100 text-cyan-700",
+    'sightseeing': "bg-emerald-100 text-emerald-700",
+    'boat tour': "bg-sky-100 text-sky-700",
+    'family': "bg-rose-100 text-rose-700",
+    'nightlife': "bg-violet-100 text-violet-700"
   };
 
   return (
@@ -31,7 +38,7 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
     )}>
       <CardHeader className="p-4 pb-2">
         <div className="flex justify-between items-start gap-2">
-          <Badge variant="outline" className={cn("capitalize font-medium", typeColors[activity.type])}>
+          <Badge variant="outline" className={cn("capitalize font-medium text-[10px]", typeColors[activity.type as keyof typeof typeColors] || "bg-muted")}>
             {activity.type}
           </Badge>
           <div className="flex items-center text-xs text-muted-foreground">
@@ -39,16 +46,12 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
             {activity.durationMinutes} min
           </div>
         </div>
-        <CardTitle className="text-lg mt-2 leading-tight font-headline text-foreground">{activity.name}</CardTitle>
+        <CardTitle className="text-sm mt-2 leading-tight font-headline font-bold text-foreground line-clamp-1">{activity.name}</CardTitle>
       </CardHeader>
       <CardContent className="p-4 pt-0">
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+        <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
           {activity.description}
         </p>
-        <div className="flex items-center text-xs text-muted-foreground">
-          <MapPin className="w-3 h-3 mr-1 shrink-0" />
-          <span className="truncate">{activity.address}</span>
-        </div>
       </CardContent>
       <CardFooter className="p-4 pt-0 flex gap-2">
         {actionType === 'add' ? (
@@ -56,10 +59,10 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
             onClick={onAction} 
             variant="default" 
             size="sm" 
-            className="w-full bg-primary hover:bg-primary/90 text-white"
+            className="w-full bg-primary h-8 text-xs hover:bg-primary/90 text-white"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add to Day
+            Add to Itinerary
           </Button>
         ) : (
           <>
@@ -67,7 +70,7 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
               onClick={onAction} 
               variant="ghost" 
               size="icon" 
-              className="text-destructive hover:bg-destructive/10"
+              className="text-destructive h-8 w-8 hover:bg-destructive/10"
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -76,14 +79,14 @@ export function ActivityCard({ activity, onAction, onToggleOptional, actionType 
               variant="outline" 
               size="sm" 
               className={cn(
-                "flex-1 text-xs",
+                "flex-1 text-[10px] h-8",
                 activity.isOptional ? "bg-accent/10 border-accent text-accent" : ""
               )}
             >
               {activity.isOptional ? (
                 <><CheckCircle2 className="w-3 h-3 mr-1" /> Optional</>
               ) : (
-                <><Circle className="w-3 h-3 mr-1" /> Mark Optional</>
+                <><Circle className="w-3 h-3 mr-1" /> Optional?</>
               )}
             </Button>
           </>
