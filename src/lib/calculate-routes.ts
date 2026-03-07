@@ -1,8 +1,9 @@
 'use server';
 
 import { PlannedActivity } from '@/app/components/planner-store';
+import { calculateTravelTimeMock } from './mock-routes';
 
-const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+const MAPS_API_KEY = process.env.MAPS_API_KEY;
 
 export type TravelMode = 'car' | 'walk' | 'transit';
 
@@ -16,8 +17,9 @@ interface RouteResponse {
  * Pings the Google Maps Routes API (V2) to get distance and time.
  */
 async function getRouteOptions(origin: string, destination: string, departureTimeDate: Date) {
-    if (!GOOGLE_MAPS_API_KEY) {
-        console.warn("GOOGLE_MAPS_API_KEY is not set. Defaulting to LLM / mocked times.");
+    // Fallback to LLM / mocked values if no API key is provided
+    if (!MAPS_API_KEY) {
+        console.warn("MAPS_API_KEY is not set. Defaulting to LLM / mocked times.");
         return null;
     }
 
@@ -46,8 +48,8 @@ async function getRouteOptions(origin: string, destination: string, departureTim
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
-                'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.staticDuration',
+                'X-Goog-Api-Key': MAPS_API_KEY,
+                'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.legs'
             },
             body: JSON.stringify(body),
         });
