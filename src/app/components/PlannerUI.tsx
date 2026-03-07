@@ -30,7 +30,7 @@ import { DiscoveryTable } from "./DiscoveryTable";
 import { AIRecommendations } from "./AIRecommendations";
 import { CustomActivityDialog } from "./CustomActivityDialog";
 import { MealRecommendation } from "./MealRecommendation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { optimizeFullTrip } from "@/ai/flows/optimize-itinerary-flow";
 import { refineItineraryChat } from "@/ai/flows/refine-itinerary-chat-flow";
@@ -66,11 +66,11 @@ export function PlannerUI() {
   } = usePlanner();
   
   const [isOptimizing, setIsOptimizing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [chatInput, setChatInput] = useState("");
-  const [isChatting, setIsChatting] = useState(false);
 
-  const activeDay = days.find(d => d.id === activeDayId);
+  const activeDay = useMemo(() => {
+    return days.find(d => d.id === activeDayId) || days[0];
+  }, [days, activeDayId]);
 
   const handleGlobalOptimization = async () => {
     if (days.length === 0) return;
@@ -140,10 +140,10 @@ export function PlannerUI() {
       });
     } catch (err: any) {
       console.error(err);
-      const isQuotaError = err.message?.includes('429');
+      const isQuotaError = err.message?.includes('429') || err.message?.includes('RESOURCE_EXHAUSTED');
       toast({
         title: isQuotaError ? "AI is Busy" : "Optimization Failed",
-        description: isQuotaError ? "Please wait 30 seconds." : "Check your connection.",
+        description: isQuotaError ? "Please wait 30 seconds and try again." : "Could not reach the planning service.",
         variant: "destructive"
       });
     } finally {
@@ -174,18 +174,7 @@ export function PlannerUI() {
     car: <Car className="w-3.5 h-3.5" />
   };
 
-  const airportOptions = [
-    { name: "BOS - Logan International", value: "Boston Logan International Airport" },
-    { name: "MHT - Manchester-Boston", value: "Manchester-Boston Regional Airport" }
-  ];
-
-  const trainOptions = [
-    { name: "Lowell Station", value: "Lowell MBTA Station" },
-    { name: "Boston North Station", value: "Boston North Station" },
-    { name: "Boston South Station", value: "Boston South Station" }
-  ];
-
-  if (!activeDay) return <div className="p-20 text-center font-black uppercase tracking-widest opacity-40">Initializing Plan...</div>;
+  if (!activeDay) return null;
 
   return (
     <Tabs defaultValue="discover" className="w-full">
@@ -320,7 +309,11 @@ export function PlannerUI() {
               </div>
 
               <div className="space-y-8 pl-6 border-l-2 border-primary/10 relative">
-                {activeDay.activities.map((activity, idx) => {
+                {activeDay.activities.length === 0 ? (
+                   <div className="text-center py-20 opacity-30 font-black uppercase tracking-widest text-xs">
+                      No activities planned for this day.
+                   </div>
+                ) : activeDay.activities.map((activity, idx) => {
                   const isMealPlaceholder = activity.isMeal && activity.type === 'food' && activity.description.toLowerCase().includes('recommended');
                   return (
                     <div key={activity.id} className="relative">

@@ -10,7 +10,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <header className="relative h-[250px] w-full overflow-hidden flex items-center justify-center">
+      <header className="relative h-[250px] w-full overflow-hidden flex items-center justify-center border-b border-primary/10">
         {heroImage && (
           <Image
             src={heroImage.imageUrl}
@@ -34,14 +34,14 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Content - Removed negative margin to fix persistent shadowed line */}
-      <main className="container mx-auto px-4 py-8 relative z-20">
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8 relative z-10">
         <PlannerProvider>
           <PlannerUI />
         </PlannerProvider>
       </main>
 
-      <footer className="py-8 border-t bg-white/50 text-center text-sm text-muted-foreground">
+      <footer className="py-8 border-t bg-white/50 text-center text-sm text-muted-foreground mt-12">
         <div className="container mx-auto px-4">
           <p>© {new Date().getFullYear()} Boston Merrimack Wanderer. Proudly exploring the Merrimack Valley.</p>
           <p className="mt-1">Crafted with tranquility in Tewksbury, MA.</p>
