@@ -1,7 +1,6 @@
 'use server';
 
 import { PlannedActivity } from '@/app/components/planner-store';
-import { calculateTravelTimeMock } from './mock-routes';
 
 const MAPS_API_KEY = process.env.MAPS_API_KEY;
 

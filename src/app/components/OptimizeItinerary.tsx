@@ -10,7 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { recalculateTimelineWithTraffic } from '@/lib/calculate-routes';
 
 export function OptimizeItinerary() {
-  const { days, activeDayId, setDayActivities, startHour, activityPace } = usePlanner();
+  const { days, activeDayId, setDayActivities, activityPace } = usePlanner();
   const [loading, setLoading] = useState(false);
   const activeDay = days.find(d => d.id === activeDayId);
 
@@ -35,10 +35,10 @@ export function OptimizeItinerary() {
           address: a.address,
           fixedStartTime: a.fixedStartTime
         })),
-        startHour: activeDay.startHourOverride || startHour || 9,
+        startHour: activeDay.startHourOverride || 9,
         endHour: activeDay.endHourOverride,
-        startLocation: activeDay.startLocation,
-        endLocation: activeDay.endLocation
+        startLocation: activeDay.startLocation || "Tewksbury, MA",
+        endLocation: activeDay.endLocation || "Tewksbury, MA"
       });
 
       if (!response.success) {
@@ -72,7 +72,7 @@ export function OptimizeItinerary() {
 
       // Post-process sequence through Google Maps Routes API
       const startLoc = activeDay.startLocation || "Tewksbury, MA";
-      const startH = activeDay.startHourOverride || startHour || 9;
+      const startH = activeDay.startHourOverride || 9;
 
       let finalActivities = optimizedActivities;
 

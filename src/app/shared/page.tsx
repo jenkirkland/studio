@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { PlannedActivity, PlannedDay } from "../components/planner-store";
+import { PlannedActivity, DayPlan } from "../components/planner-store";
 import { ActivityCard } from "../components/ActivityCard";
 import { Clock, Car, Map, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,7 +11,7 @@ import { Suspense } from "react";
 
 function SharedItineraryContent() {
     const searchParams = useSearchParams();
-    const [day, setDay] = useState<PlannedDay | null>(null);
+    const [day, setDay] = useState<DayPlan | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -30,7 +30,7 @@ function SharedItineraryContent() {
                 throw new Error("Could not decode itinerary data.");
             }
 
-            const decodedDay = JSON.parse(decompressed) as PlannedDay;
+            const decodedDay = JSON.parse(decompressed) as DayPlan;
             setDay(decodedDay);
         } catch (e: any) {
             console.error("Failed to parse shared itinerary:", e);
@@ -62,8 +62,8 @@ function SharedItineraryContent() {
     // Generate Google Maps link for the 'Route' button
     const origin = encodeURIComponent(day.startLocation || "Tewksbury,MA");
     const stops = day.activities
-        .filter(a => !a.isOptional)
-        .map(a => encodeURIComponent(a.address))
+        .filter((a: PlannedActivity) => !a.isOptional)
+        .map((a: PlannedActivity) => encodeURIComponent(a.address))
         .join('/');
     const destination = encodeURIComponent(day.endLocation || "Tewksbury,MA");
     const mapsLink = `https://www.google.com/maps/dir/${origin}/${stops}/${destination}`;
@@ -90,7 +90,7 @@ function SharedItineraryContent() {
                         <div className="text-center py-20 opacity-30 font-black uppercase tracking-widest text-xs">
                             No activities planned.
                         </div>
-                    ) : day.activities.map((activity, idx) => {
+                    ) : day.activities.map((activity: PlannedActivity, idx: number) => {
                         const isMealPlaceholder = activity.isMeal && activity.type === 'food' && activity.description.toLowerCase().includes('recommended');
                         return (
                             <div key={activity.id} className="relative">

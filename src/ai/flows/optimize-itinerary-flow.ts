@@ -33,6 +33,8 @@ const OptimizeFullTripInputSchema = z.object({
   dailyActiveHours: z.number().default(8),
 });
 
+export type OptimizeFullTripInput = z.infer<typeof OptimizeFullTripInputSchema>;
+
 const OptimizedItemSchema = z.object({
   type: z.enum(['activity', 'meal']),
   id: z.string().optional(),

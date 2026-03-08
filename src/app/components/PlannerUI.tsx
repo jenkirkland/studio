@@ -116,7 +116,7 @@ export function PlannerUI() {
           const existing = [...d.activities, ...shortlist, ...ACTIVITIES].find(a =>
             a.id === item.id ||
             a.name.toLowerCase() === item.name.toLowerCase()
-          );
+          ) as PlannedActivity | undefined;
 
           return {
             id: item.id || existing?.id || `ai-${Date.now()}-${Math.random()}`,
